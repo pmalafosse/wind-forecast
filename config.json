@@ -15,9 +15,9 @@
       "lat": 41.2653,
       "lon": 1.9816,
       "dir_sector": {
-        "start": 270,
-        "end": 112.5,
-        "wrap": true
+        "start": 190,
+        "end": 359,
+        "wrap": false
       }
     },
     {
@@ -25,8 +25,8 @@
       "lat": 41.63,
       "lon": 2.73,
       "dir_sector": {
-        "start": 215,
-        "end": 45,
+        "start": 200,
+        "end": 20,
         "wrap": true
       }
     },

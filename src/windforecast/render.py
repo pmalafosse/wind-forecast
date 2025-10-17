@@ -13,7 +13,10 @@ logger = logging.getLogger(__name__)
 
 try:
     from PIL import Image
+
+    HAS_PILLOW = True
 except ImportError:
+    HAS_PILLOW = False
     Image = None
 
 logger = logging.getLogger(__name__)
@@ -31,22 +34,64 @@ class ReportRenderer:
         """
         self.template_dir = template_dir or (Path(__file__).parent / "templates")
 
-    def render_html(self, data: dict, output_path: Path) -> None:
+    def render_html(self, data: Dict[str, Any], output_path: Path) -> None:
         """
         Render forecast data to HTML report.
 
         Args:
-            data: Processed forecast data
+            data: Processed forecast data dictionary with spots and forecasts
             output_path: Where to save the HTML file
         """
-        # Implementation moved from render.py
-        pass
+        with open(self.template_dir / "report.html") as f:
+            template = f.read()
+
+        # Convert data to HTML
+        spot_tables = []
+        for spot in data["spots"]:
+            rows = []
+            for r in spot["rows"]:
+                rows.append(
+                    f"""
+                <tr class="{r['band']}">
+                    <td>{r['time']}</td>
+                    <td>{r['wind_kn']:.1f}</td>
+                    <td>{r['gust_kn']:.1f}</td>
+                    <td>{r['dir']} ({r['dir_deg']}°)</td>
+                    <td>{r['precip_mm_h']:.1f}</td>
+                    <td>{r['wave_m']:.1f if r['wave_m'] is not None else '-'}</td>
+                    <td>{r['band']}</td>
+                </tr>"""
+                )
+
+            spot_tables.append(
+                f"""
+            <section>
+                <h2>{spot['spot']}</h2>
+                <table>
+                    <tr>
+                        <th>Time</th>
+                        <th>Wind (kn)</th>
+                        <th>Gust (kn)</th>
+                        <th>Direction</th>
+                        <th>Rain (mm/h)</th>
+                        <th>Wave (m)</th>
+                        <th>Band</th>
+                    </tr>
+                    {''.join(rows)}
+                </table>
+            </section>"""
+            )
+
+        content = template.replace("<!-- FORECAST_DATA -->", "\n".join(spot_tables)).replace(
+            "<!-- GENERATED_AT -->", data["generated_at"]
+        )
+
+        output_path.write_text(content)
 
     def generate_jpg(
         self, html_path: Path, jpg_path: Path, viewport: Tuple[int, int] = (2400, 1200)
     ) -> bool:
-        """
-        Generate JPG image from HTML report.
+        """Generate JPG image from HTML report.
 
         Args:
             html_path: Path to HTML file
@@ -72,7 +117,11 @@ class ReportRenderer:
         return False
 
     def _find_chrome(self) -> Optional[str]:
-        """Find Chrome/Chromium executable."""
+        """Find Chrome/Chromium executable.
+
+        Returns:
+            Path to Chrome/Chromium executable if found, None otherwise.
+        """
         # Standard executable names
         chrome_names = ["google-chrome", "chrome", "chromium", "chromium-browser"]
         for name in chrome_names:
@@ -94,7 +143,17 @@ class ReportRenderer:
     def _try_chrome(
         self, chrome_path: str, html_path: Path, jpg_path: Path, viewport: Tuple[int, int]
     ) -> bool:
-        """Try generating image with Chrome/Chromium."""
+        """Try generating image with Chrome/Chromium.
+
+        Args:
+            chrome_path: Path to Chrome/Chromium executable
+            html_path: Path to source HTML file
+            jpg_path: Path to output JPG file
+            viewport: Browser viewport dimensions
+
+        Returns:
+            True if conversion successful, False otherwise
+        """
         html_abs = html_path.absolute()
         jpg_abs = jpg_path.absolute()
         tmp_png = jpg_abs.with_suffix(".png")
@@ -111,8 +170,8 @@ class ReportRenderer:
             ]
             subprocess.run(cmd, check=True, capture_output=True)
 
-            if Image:
-                img = Image.open(tmp_png)
+            if HAS_PILLOW:
+                img = Image.open(tmp_png)  # type: ignore
                 rgb = img.convert("RGB")
                 rgb.save(jpg_abs, "JPEG", quality=90)
                 tmp_png.unlink()
@@ -136,6 +195,23 @@ class ReportRenderer:
             return False
 
     def _try_wkhtmltoimage(self, wk_path: str, html_path: Path, jpg_path: Path) -> bool:
-        """Try generating image with wkhtmltoimage."""
-        # Implementation moved from render.py
-        pass
+        """Try generating image with wkhtmltoimage.
+
+        Args:
+            wk_path: Path to wkhtmltoimage executable
+            html_path: Path to source HTML file
+            jpg_path: Path to output JPG file
+
+        Returns:
+            True if conversion successful, False otherwise
+        """
+        try:
+            cmd = [wk_path, str(html_path), str(jpg_path)]
+            subprocess.run(cmd, check=True, capture_output=True)
+            return True
+        except subprocess.CalledProcessError as e:
+            logger.error(f"wkhtmltoimage failed: {e.stderr}")
+            return False
+        except Exception as e:
+            logger.error(f"Error generating JPG: {e}")
+            return False

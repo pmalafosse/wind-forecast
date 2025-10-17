@@ -123,11 +123,12 @@ class ForecastClient:
                     return label
             return "below"
 
-        def _direction_in_sector(deg: float, sector: Dict[str, Any]) -> bool:
+        def _direction_in_sector(deg: float, sector: Optional[Dict[str, Any]]) -> bool:
             """Check if wind direction is within sector."""
             if sector is None:
                 return True
-            start, end = sector["start"], sector["end"]
+            start = float(str(sector.get("start", 0)))
+            end = float(str(sector.get("end", 360)))
             wrap = sector.get("wrap", False)
             if not wrap:
                 return start <= deg <= end

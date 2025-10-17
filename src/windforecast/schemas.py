@@ -14,7 +14,7 @@ class DirectionSector(BaseModel):
     wrap: bool = False  # whether sector wraps around north
 
     @validator("end")
-    def validate_sector(cls, v, values):
+    def validate_sector(cls, v: float, values: dict) -> float:
         """Validate that start and end create a valid sector."""
         if "start" not in values:
             return v
@@ -62,7 +62,7 @@ class TimeWindow(BaseModel):
     day_end: float = Field(ge=0, le=23, description="Hour to stop considering forecasts")
 
     @validator("day_end")
-    def validate_window(cls, v, values):
+    def validate_window(cls, v: float, values: dict) -> float:
         """Validate that end time is after start time."""
         if "day_start" in values and v < values["day_start"]:
             raise ValueError("day_end must be after day_start")
@@ -77,8 +77,8 @@ class Conditions(BaseModel):
     min_run_hours: float = Field(ge=0, description="Minimum consecutive hours for a session")
 
     @validator("bands")
-    def validate_bands(cls, v):
-        """Validate that bands are in descending order of threshold."""
+    def validate_bands(cls, v: List[Tuple[str, float]]) -> List[Tuple[str, float]]:
+        """Validate that bands are in descending order."""
         if not v:
             raise ValueError("Must provide at least one band")
         thresholds = [band[1] for band in v]

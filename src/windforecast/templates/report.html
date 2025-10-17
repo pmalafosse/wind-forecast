@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wind Forecast Report</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            line-height: 1.5;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+        }
+        h2 {
+            color: #34495e;
+            border-bottom: 2px solid #ecf0f1;
+            padding-bottom: 5px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        th, td {
+            text-align: left;
+            padding: 12px;
+            border-bottom: 1px solid #ecf0f1;
+        }
+        th {
+            background-color: #34495e;
+            color: white;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        .timestamp {
+            color: #7f8c8d;
+            font-size: 0.9em;
+            text-align: right;
+            margin-top: 20px;
+        }
+        /* Wind bands */
+        .too-much { background-color: #e74c3c !important; color: white; }
+        .hardcore { background-color: #c0392b !important; color: white; }
+        .insane { background-color: #d35400 !important; color: white; }
+        .great { background-color: #e67e22 !important; color: white; }
+        .very-good { background-color: #f1c40f !important; }
+        .good { background-color: #27ae60 !important; color: white; }
+        .ok { background-color: #2ecc71 !important; }
+        .light { background-color: #3498db !important; color: white; }
+        .below { background-color: #bdc3c7 !important; }
+    </style>
+</head>
+<body>
+    <h1>Wind Forecast Report</h1>
+    <!-- FORECAST_DATA -->
+    <div class="timestamp">Generated at: <!-- GENERATED_AT --></div>
+</body>
+</html>

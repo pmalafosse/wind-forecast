@@ -15,7 +15,9 @@ def configure_logging(verbose: bool = False, log_file: Optional[Path] = None) ->
         verbose: If True, sets root logger to DEBUG level
         log_file: Optional path to log file. If provided, adds a file handler.
     """
-    config = {
+    from typing import Any, Dict, List
+
+    config: Dict[str, Any] = {
         "version": 1,
         "disable_existing_loggers": False,
         "formatters": {
@@ -52,7 +54,8 @@ def configure_logging(verbose: bool = False, log_file: Optional[Path] = None) ->
             "filename": str(log_file),
             "mode": "a",
         }
-        config["loggers"]["windforecast"]["handlers"].append("file")
+        if isinstance(config["loggers"]["windforecast"]["handlers"], list):
+            config["loggers"]["windforecast"]["handlers"].append("file")
 
     # Apply configuration
     logging.config.dictConfig(config)

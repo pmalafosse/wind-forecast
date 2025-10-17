@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 import sys
 from pathlib import Path
-import windguru
+
 import render
+import windguru
+
 
 def main():
     """
@@ -22,10 +24,10 @@ def main():
     try:
         # First generate the HTML
         render.main()
-        
+
         # Then generate the JPG
         print("\n3. Creating JPG snapshot...")
-        success = render.generate_jpg(render.OUT_FILE, 'out/report.jpg')
+        success = render.generate_jpg(render.OUT_FILE, "out/report.jpg")
         if success:
             print("Wrote out/report.jpg")
         else:
@@ -36,6 +38,7 @@ def main():
         return 1
 
     return 0
+
 
 if __name__ == "__main__":
     sys.exit(main())

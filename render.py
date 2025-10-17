@@ -1,11 +1,13 @@
 # render_table_from_json.py
-import json, os
-from datetime import datetime, timedelta
 import argparse
+import json
+import os
 import shutil
 import subprocess
 import sys
+from datetime import datetime, timedelta
 from pathlib import Path
+
 try:
     from PIL import Image
 except Exception:
@@ -21,7 +23,9 @@ def stars_for(row):
     if not row or not row.get("kiteable"):
         return 0
     w = row["wind_kn"]
-    return 5 if w >= 25 else 4 if w >= 20 else 3 if w >= 17 else 2 if w >= 15 else 1 if w >= 12 else 0
+    return (
+        5 if w >= 25 else 4 if w >= 20 else 3 if w >= 17 else 2 if w >= 15 else 1 if w >= 12 else 0
+    )
 
 
 def stars_str(n):
@@ -151,9 +155,12 @@ def main():
         return "no"
 
     mu = data.get("model_updates") or {}
-    updates_html = " • ".join(
-        f"{v.get('title', k)}: {v.get('run', '')}" for k, v in mu.items() if v.get("run")
-    ) or "—"
+    updates_html = (
+        " • ".join(
+            f"{v.get('title', k)}: {v.get('run', '')}" for k, v in mu.items() if v.get("run")
+        )
+        or "—"
+    )
 
     html = [
         "<!doctype html><meta charset='utf-8'><title>Kite conditions</title>",
@@ -167,11 +174,7 @@ def main():
         times = hour_to_times[h]
         label = h.strftime("%Y-%m-%d %H:00")
         has_15 = any(parse_time(t).minute != 0 for t in times)
-        btn = (
-            f"<button class='expand-btn' data-col='{i}'>Toggle 15 min</button>"
-            if has_15
-            else ""
-        )
+        btn = f"<button class='expand-btn' data-col='{i}'>Toggle 15 min</button>" if has_15 else ""
         html.append(
             f"<th data-col='{i}' data-expanded='false'><div class='nowrap'>{label}</div>{btn}</th>"
         )
@@ -219,12 +222,15 @@ def find_executable(names):
         if p:
             return p
     # On macOS, also check common .app bundle locations for Chrome/Chromium
-    if sys.platform == 'darwin':
+    if sys.platform == "darwin":
         app_candidates = [
-            ('google-chrome', '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'),
-            ('google-chrome-stable', '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'),
-            ('chromium', '/Applications/Chromium.app/Contents/MacOS/Chromium'),
-            ('chromium-browser', '/Applications/Chromium.app/Contents/MacOS/Chromium'),
+            ("google-chrome", "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"),
+            (
+                "google-chrome-stable",
+                "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+            ),
+            ("chromium", "/Applications/Chromium.app/Contents/MacOS/Chromium"),
+            ("chromium-browser", "/Applications/Chromium.app/Contents/MacOS/Chromium"),
         ]
         for name, path in app_candidates:
             if Path(path).exists():
@@ -244,20 +250,22 @@ def generate_jpg(html_path: str, jpg_path: str, viewport=(2400, 1200)) -> bool:
     """
     html_p = Path(html_path).absolute()
     out_j = Path(jpg_path).absolute()
-    tmp_png = out_j.with_suffix('.png')
+    tmp_png = out_j.with_suffix(".png")
 
     # 1) Try Chrome/Chromium headless
-    chrome = find_executable(['google-chrome', 'chrome', 'chromium', 'chromium-browser', 'google-chrome-stable'])
+    chrome = find_executable(
+        ["google-chrome", "chrome", "chromium", "chromium-browser", "google-chrome-stable"]
+    )
     if chrome:
         cmd = [
             chrome,
-            '--headless',
-            '--disable-gpu',  # Recommended for headless
-            f'--window-size={viewport[0]},{viewport[1]}',
-            '--hide-scrollbars',  # Remove scrollbars from screenshot
-            '--wait-until=networkidle0',  # Wait for page to be fully loaded
-            f'--screenshot={str(tmp_png)}',
-            f'file://{html_p}'
+            "--headless",
+            "--disable-gpu",  # Recommended for headless
+            f"--window-size={viewport[0]},{viewport[1]}",
+            "--hide-scrollbars",  # Remove scrollbars from screenshot
+            "--wait-until=networkidle0",  # Wait for page to be fully loaded
+            f"--screenshot={str(tmp_png)}",
+            f"file://{html_p}",
         ]
         try:
             # Allow seeing any Chrome errors for debugging
@@ -268,16 +276,18 @@ def generate_jpg(html_path: str, jpg_path: str, viewport=(2400, 1200)) -> bool:
             pass
 
     # 2) Try wkhtmltoimage
-    wk = find_executable(['wkhtmltoimage'])
+    wk = find_executable(["wkhtmltoimage"])
     if wk:
         try:
-            subprocess.check_call([wk, '--quality', '90', str(html_p), str(out_j)])
+            subprocess.check_call([wk, "--quality", "90", str(html_p), str(out_j)])
             return out_j.exists()
         except subprocess.CalledProcessError:
             pass
 
     # 3) Last resort: open HTML in default browser is not automatable; fail with message
-    print("Could not find a renderer (Chrome/Chromium or wkhtmltoimage). Install one to enable JPG generation.")
+    print(
+        "Could not find a renderer (Chrome/Chromium or wkhtmltoimage). Install one to enable JPG generation."
+    )
     return False
 
 
@@ -285,13 +295,15 @@ def _convert_png_to_jpg(png_path: Path, jpg_path: Path) -> bool:
     try:
         if Image:
             img = Image.open(png_path)
-            rgb = img.convert('RGB')
-            rgb.save(jpg_path, 'JPEG', quality=90)
+            rgb = img.convert("RGB")
+            rgb.save(jpg_path, "JPEG", quality=90)
             png_path.unlink(missing_ok=True)
             return True
         # fallback to macOS sips
-        if sys.platform == 'darwin':
-            subprocess.check_call(['sips', '-s', 'format', 'jpeg', str(png_path), '--out', str(jpg_path)])
+        if sys.platform == "darwin":
+            subprocess.check_call(
+                ["sips", "-s", "format", "jpeg", str(png_path), "--out", str(jpg_path)]
+            )
             png_path.unlink(missing_ok=True)
             return True
     except Exception:
@@ -300,8 +312,13 @@ def _convert_png_to_jpg(png_path: Path, jpg_path: Path) -> bool:
 
 
 def _parse_args():
-    p = argparse.ArgumentParser(description='Render kite forecast HTML and optionally JPG')
-    p.add_argument('--jpg', nargs='?', const='out/report.jpg', help='Also generate a JPG from the generated HTML (optional output path)')
+    p = argparse.ArgumentParser(description="Render kite forecast HTML and optionally JPG")
+    p.add_argument(
+        "--jpg",
+        nargs="?",
+        const="out/report.jpg",
+        help="Also generate a JPG from the generated HTML (optional output path)",
+    )
     return p.parse_args()
 
 
@@ -309,7 +326,7 @@ if __name__ == "__main__":
     args = _parse_args()
     main()
     if args.jpg:
-        outjpg = args.jpg if isinstance(args.jpg, str) else 'out/report.jpg'
+        outjpg = args.jpg if isinstance(args.jpg, str) else "out/report.jpg"
         success = generate_jpg(OUT_FILE, outjpg)
         if success:
             print(f"Wrote {outjpg}")
