@@ -6,7 +6,7 @@ Extract most recent Arome wind forecast and generate HTML/JPG reports.
 All settings are stored in `config.json`:
 - Spot definitions (coordinates and valid wind directions)
 - Forecast parameters (model, variables, time ranges)
-- Time window settings (day start/end hours)
+- Time window settings (day start/end hou rs)
 - Wind condition bands and thresholds
 
 Edit this file to:
@@ -31,6 +31,19 @@ The project consists of two main scripts that work together:
    - Optionally generates a JPG image of the report
 
 ### Running the Scripts
+
+#### Option 1: Run Everything at Once (Recommended)
+Run the complete workflow with a single command:
+```bash
+python main.py
+```
+This will:
+1. Fetch the latest forecast data
+2. Generate the HTML report
+3. Create a JPG snapshot automatically
+
+#### Option 2: Run Scripts Individually
+If you need more control, you can run the scripts separately:
 
 1. First, fetch the latest forecast data:
    ```bash
