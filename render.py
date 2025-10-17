@@ -1,6 +1,15 @@
 # render_table_from_json.py
 import json, os
 from datetime import datetime, timedelta
+import argparse
+import shutil
+import subprocess
+import sys
+from pathlib import Path
+try:
+    from PIL import Image
+except Exception:
+    Image = None
 from collections import defaultdict
 
 IN_FILE = "out/windows.json"
@@ -203,5 +212,106 @@ def main():
     print(f"Wrote {OUT_FILE}")
 
 
+def find_executable(names):
+    """Return first available executable from names or None."""
+    for n in names:
+        p = shutil.which(n)
+        if p:
+            return p
+    # On macOS, also check common .app bundle locations for Chrome/Chromium
+    if sys.platform == 'darwin':
+        app_candidates = [
+            ('google-chrome', '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'),
+            ('google-chrome-stable', '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'),
+            ('chromium', '/Applications/Chromium.app/Contents/MacOS/Chromium'),
+            ('chromium-browser', '/Applications/Chromium.app/Contents/MacOS/Chromium'),
+        ]
+        for name, path in app_candidates:
+            if Path(path).exists():
+                return path
+    return None
+
+
+def generate_jpg(html_path: str, jpg_path: str, viewport=(2400, 1200)) -> bool:
+    """Attempt to render an HTML file to JPG.
+
+    Strategy:
+    - Try headless Chrome/Chromium to save a PNG screenshot and convert to JPG.
+    - If not available, try wkhtmltoimage directly to produce JPG.
+    - Convert PNG->JPG using Pillow if installed, else use macOS `sips`.
+
+    Returns True on success.
+    """
+    html_p = Path(html_path).absolute()
+    out_j = Path(jpg_path).absolute()
+    tmp_png = out_j.with_suffix('.png')
+
+    # 1) Try Chrome/Chromium headless
+    chrome = find_executable(['google-chrome', 'chrome', 'chromium', 'chromium-browser', 'google-chrome-stable'])
+    if chrome:
+        cmd = [
+            chrome,
+            '--headless',
+            '--disable-gpu',  # Recommended for headless
+            f'--window-size={viewport[0]},{viewport[1]}',
+            '--hide-scrollbars',  # Remove scrollbars from screenshot
+            '--wait-until=networkidle0',  # Wait for page to be fully loaded
+            f'--screenshot={str(tmp_png)}',
+            f'file://{html_p}'
+        ]
+        try:
+            # Allow seeing any Chrome errors for debugging
+            subprocess.check_call(cmd)
+            # convert png -> jpg
+            return _convert_png_to_jpg(tmp_png, out_j)
+        except subprocess.CalledProcessError:
+            pass
+
+    # 2) Try wkhtmltoimage
+    wk = find_executable(['wkhtmltoimage'])
+    if wk:
+        try:
+            subprocess.check_call([wk, '--quality', '90', str(html_p), str(out_j)])
+            return out_j.exists()
+        except subprocess.CalledProcessError:
+            pass
+
+    # 3) Last resort: open HTML in default browser is not automatable; fail with message
+    print("Could not find a renderer (Chrome/Chromium or wkhtmltoimage). Install one to enable JPG generation.")
+    return False
+
+
+def _convert_png_to_jpg(png_path: Path, jpg_path: Path) -> bool:
+    try:
+        if Image:
+            img = Image.open(png_path)
+            rgb = img.convert('RGB')
+            rgb.save(jpg_path, 'JPEG', quality=90)
+            png_path.unlink(missing_ok=True)
+            return True
+        # fallback to macOS sips
+        if sys.platform == 'darwin':
+            subprocess.check_call(['sips', '-s', 'format', 'jpeg', str(png_path), '--out', str(jpg_path)])
+            png_path.unlink(missing_ok=True)
+            return True
+    except Exception:
+        pass
+    return False
+
+
+def _parse_args():
+    p = argparse.ArgumentParser(description='Render kite forecast HTML and optionally JPG')
+    p.add_argument('--jpg', nargs='?', const='out/report.jpg', help='Also generate a JPG from the generated HTML (optional output path)')
+    return p.parse_args()
+
+
 if __name__ == "__main__":
+    args = _parse_args()
     main()
+    if args.jpg:
+        outjpg = args.jpg if isinstance(args.jpg, str) else 'out/report.jpg'
+        success = generate_jpg(OUT_FILE, outjpg)
+        if success:
+            print(f"Wrote {outjpg}")
+        else:
+            print("Failed to generate JPG.")
