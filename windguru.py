@@ -2,131 +2,33 @@
 import json, math, os
 from datetime import datetime
 import itertools
+from pathlib import Path
 import requests
 import pandas as pd
 
-# ---------- 1) Spots ----------
-SPOTS = [
-    {
-        "name": "Bogatell",
-        "lat": 41.3948,
-        "lon": 2.2105,
-        # SW→NE (225°..45°, wraps around north)
-        "dir_sector": {"start": 225, "end": 45, "wrap": True},
-    },
-    {
-        "name": "Castelldefels",
-        "lat": 41.2653,
-        "lon": 1.9816,
-        # W→ESE (270°..112.5°, wraps around north)
-        "dir_sector": {"start": 270, "end": 112.5, "wrap": True},
-    },
-    {
-        "name": "Malgrat",
-        "lat": 41.63,
-        "lon": 2.73,
-        # SW→NE (225°..45°, wraps around north)
-        "dir_sector": {"start": 215, "end": 45, "wrap": True},
-    },
-    {
-        "name": "Palamos",
-        "lat": 41.85,
-        "lon": 3.13,
-        # SW→SE (200..330°)
-        "dir_sector": {"start": 200, "end": 330, "wrap": False},
-    },
-    {
-        "name": "Sant Pere Pescador",
-        "lat": 42.19,
-        "lon": 3.11,
-        # S→ENE (225°..67.5°, wraps around north)
-        "dir_sector": {"start": 180, "end": 67.5, "wrap": True},
-    },
-    {
-        "name": "Rubina",
-        "lat": 42.26,
-        "lon": 3.15,
-        # SW→ENE (225°..67.5°, wraps around north)
-        "dir_sector": {"start": 225, "end": 67.5, "wrap": True},
-    },
-    {
-        "name": "Cubelles",
-        "lat": 41.19,
-        "lon": 1.65,
-        # SW→E (225°..90°, wraps around north)
-        "dir_sector": {"start": 225, "end": 90, "wrap": True},
-    },
-    {
-        "name": "Parc des Dosses",
-        "lat": 42.8364,
-        "lon": 3.0237,
-        # NW→S (315°..180°)
-        "dir_sector": {"start": 315, "end": 180, "wrap": False},
-    },
-    {
-        "name": "Base Militaire",
-        "lat": 42.8012,
-        "lon": 2.9958,
-        # ENE→WNW (315°..180°)
-        "dir_sector": {"start": 67.5, "end": 180, "wrap": False},
-    },
-    {
-        "name": "Riumar",
-        "lat": 40.7301,
-        "lon": 0.8412,
-        # NW→NE (315°..45°, wraps around north)
-        "dir_sector": {"start": 315, "end": 45, "wrap": True},
-    },
-    {
-        "name": "Trabucador",
-        "lat": 40.62,
-        "lon": 0.68,
-        # NE→E (45°..90°)
-        "dir_sector": {"start": 45, "end": 90, "wrap": False},
-    },
-    {
-        "name": "Embouchure Barcarès",
-        "lat": 42.78,
-        "lon": 3.04,
-        # S→NE (180°..45°, wraps around north)
-        "dir_sector": {"start": 180, "end": 45, "wrap": True},
-    },
-    {
-        "name": "La Nautique",
-        "lat": 43.1373,
-        "lon": 2.9971,
-        # NE→SW (45°..225°)
-        "dir_sector": {"start": 45, "end": 225, "wrap": False},
-    },
-]
+def load_config():
+    """Load configuration from config.json"""
+    config_path = Path(__file__).parent / "config.json"
+    with open(config_path, encoding="utf-8") as f:
+        return json.load(f)
 
-# ---------- 2) Parameters ----------
-ONLY_AROME_MODELS = "arome_france_hd"  # restrict to AROME only
-HOURLY_VARS = "wind_speed_10m,wind_gusts_10m,wind_direction_10m,precipitation"
-MIN15_VARS  = HOURLY_VARS
-WAVE_VARS   = "wave_height"  # significant wave height (m)
+# Load configuration
+CONFIG = load_config()
+SPOTS = CONFIG["spots"]
+ONLY_AROME_MODELS = CONFIG["forecast"]["model"]
+HOURLY_VARS = CONFIG["forecast"]["hourly_vars"]
+MIN15_VARS = HOURLY_VARS
+WAVE_VARS = CONFIG["forecast"]["wave_vars"]
 
-FORECAST_HOURS_HOURLY = 48
-FORECAST_MIN15        = 24   # 6h * 4 steps/hour
+FORECAST_HOURS_HOURLY = CONFIG["forecast"]["forecast_hours_hourly"]
+FORECAST_MIN15 = CONFIG["forecast"]["forecast_min15"]
 
-DAY_START = 6   # 06:00 local
-DAY_END   = 20  # 20:00 local inclusive
+DAY_START = CONFIG["time_window"]["day_start"]
+DAY_END = CONFIG["time_window"]["day_end"]
 
-# bands (descending checks)
-BANDS = [
-    ("too much",  40),
-    ("hardcore",  35),
-    ("insane",    30),
-    ("great",     25),
-    ("very good", 20),
-    ("good",      17),
-    ("ok",        15),
-    ("light",     12),
-    ("below",      0),
-]
-
-RAIN_LIMIT = 0.5      # mm/h
-MIN_RUN_HOURS = 2.0   # ≥2h continuous at ≥12 kt, valid direction, and rain_ok
+BANDS = CONFIG["conditions"]["bands"]
+RAIN_LIMIT = CONFIG["conditions"]["rain_limit"]
+MIN_RUN_HOURS = CONFIG["conditions"]["min_run_hours"]
 
 # ---------- 3) Helpers ----------
 def deg_to_16pt(d):

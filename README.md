@@ -1,6 +1,20 @@
 # wind-forecast
 Extract most recent Arome wind forecast and generate HTML/JPG reports.
 
+## Configuration
+
+All settings are stored in `config.json`:
+- Spot definitions (coordinates and valid wind directions)
+- Forecast parameters (model, variables, time ranges)
+- Time window settings (day start/end hours)
+- Wind condition bands and thresholds
+
+Edit this file to:
+- Add or modify kite spots
+- Adjust the forecast window
+- Change wind speed thresholds
+- Modify time window restrictions
+
 ## Workflow
 
 The project consists of two main scripts that work together:
