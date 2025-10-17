@@ -20,9 +20,17 @@ def main():
 
     print("\n2. Generating report...")
     try:
-        # Pass --jpg flag to render.py
-        sys.argv = [sys.argv[0], "--jpg"]  # Simulate --jpg argument
+        # First generate the HTML
         render.main()
+        
+        # Then generate the JPG
+        print("\n3. Creating JPG snapshot...")
+        success = render.generate_jpg(render.OUT_FILE, 'out/report.jpg')
+        if success:
+            print("Wrote out/report.jpg")
+        else:
+            print("Failed to generate JPG.", file=sys.stderr)
+            return 1
     except Exception as e:
         print(f"Error generating report: {e}", file=sys.stderr)
         return 1
