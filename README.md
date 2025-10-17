@@ -1,5 +1,37 @@
 # wind-forecast
-Extract most recent Arome wind forecast
+Extract most recent Arome wind forecast and generate HTML/JPG reports.
+
+## Workflow
+
+The project consists of two main scripts that work together:
+
+1. `windguru.py`: Fetches and processes wind forecast data
+   - Queries the Open-Meteo API for AROME wind forecasts
+   - Processes data for multiple kite spots
+   - Filters for kiteable conditions (wind speed, direction, rain)
+   - Outputs: `out/windows.json`
+
+2. `render.py`: Generates visual reports
+   - Reads `out/windows.json` created by `windguru.py`
+   - Creates an HTML report with interactive tables
+   - Optionally generates a JPG image of the report
+
+### Running the Scripts
+
+1. First, fetch the latest forecast data:
+   ```bash
+   python windguru.py
+   ```
+   This creates `out/windows.json` with the processed forecast data.
+
+2. Then generate the report (HTML and optionally JPG):
+   ```bash
+   python render.py         # generates HTML only
+   python render.py --jpg   # generates both HTML and JPG
+   ```
+   This creates:
+   - `out/report.html` (always)
+   - `out/report.jpg` (if --jpg flag used)
 
 ## Setup
 
