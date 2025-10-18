@@ -4,7 +4,7 @@ import logging
 import shutil
 import subprocess
 import sys
-from datetime import datetime
+from datetime import date, datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -22,8 +22,6 @@ except ImportError:
     HAS_PILLOW = False
     Image = None
 
-logger = logging.getLogger(__name__)
-
 
 class ReportRenderer:
     """HTML and image report renderer."""
@@ -39,24 +37,7 @@ class ReportRenderer:
         self.template_dir = template_dir or (Path(__file__).parent / "templates")
 
     def _calculate_stars(self, wind_kn: float, config: WindConfig) -> int:
-        """Calculate star rating based on wind speed and config bands.
-
-        The star rating scale is:
-        - 6 stars: Insane (expert-only conditions)
-        - 5 stars: Great (perfect conditions)
-        - 4 stars: Very good conditions
-        - 3 stars: Good/Hardcore (challenging conditions)
-        - 2 stars: OK conditions
-        - 1 star:  Light conditions
-        - 0 stars: Too light or too strong
-
-        Args:
-            wind_kn: Wind speed in knots
-            config: Configuration object containing wind bands
-
-        Returns:
-            Integer from 0 to 6 representing the star rating
-        """
+        """Calculate star rating based on wind speed and config bands."""
         bands = config.conditions.bands
 
         # Skip "too much" (dangerous conditions)
@@ -88,13 +69,7 @@ class ReportRenderer:
     def render_html(
         self, data: Dict[str, Any], output_path: Path, include_summary: bool = False
     ) -> None:
-        """Render forecast data to HTML report.
-
-        Args:
-            data: Processed forecast data dictionary with spots and forecasts
-            output_path: Where to save the HTML file
-            include_summary: Whether to include the daily summary section
-        """
+        """Render forecast data to HTML report."""
         with open(self.template_dir / "report.html") as f:
             template = f.read()
 
@@ -127,165 +102,74 @@ class ReportRenderer:
             spot_kiteable_count.keys(), key=lambda s: spot_kiteable_count[s], reverse=True
         )
 
-        # Calculate daily summaries
-        daily_stats: Dict[Any, Dict[str, Any]] = {}
-        config = WindConfig.model_validate(data["config"])
-
-        for hour in sorted_hours:
-            dt = datetime.fromisoformat(hour.replace("Z", "+00:00"))
-            day = dt.date()
-            day_str = dt.strftime("%A, %d/%m")
-
-            if day not in daily_stats:
-                daily_stats[day] = {
-                    "day_str": day_str,
-                    "spots": {},
-                }
-
-            for spot in sorted_spots:
-                if spot not in daily_stats[day]["spots"]:
-                    daily_stats[day]["spots"][spot] = {
-                        "kiteable_hours": 0,
-                        "total_stars": 0,
-                        "total_wind": 0,
-                        "total_gusts": 0,
-                        "total_waves": 0,
-                        "wave_count": 0,
-                    }
-
-                if hour in all_forecasts and spot in all_forecasts[hour]:
-                    r = all_forecasts[hour][spot]
-                    if r["kiteable"]:
-                        stats = daily_stats[day]["spots"][spot]
-                        stats["kiteable_hours"] += 1
-                        stats["total_stars"] += self._calculate_stars(r["wind_kn"], config)
-                        stats["total_wind"] += r["wind_kn"]
-                        stats["total_gusts"] += r["gust_kn"]
-                        if r["wave_m"] is not None:
-                            stats["total_waves"] += r["wave_m"]
-                            stats["wave_count"] += 1
-
-        # Generate daily summary HTML
-        daily_parts = [
-            '<div class="daily-summary"><h2>Daily Summary</h2><div class="daily-grid">'
-        ]  # type: List[str]
-
-        for day in sorted(daily_stats.keys()):
-            day_data = daily_stats[day]
-            day_spots = []
-
-            # Calculate spot rankings for this day
-            for spot, stats in day_data["spots"].items():
-                if stats["kiteable_hours"] > 0:
-                    avg_stars = stats["total_stars"] / stats["kiteable_hours"]
-                    avg_wind = stats["total_wind"] / stats["kiteable_hours"]
-                    avg_gusts = stats["total_gusts"] / stats["kiteable_hours"]
-                    avg_waves = (
-                        stats["total_waves"] / stats["wave_count"]
-                        if stats["wave_count"] > 0
-                        else None
-                    )
-
-                    day_spots.append(
-                        {
-                            "spot": spot,
-                            "hours": stats["kiteable_hours"],
-                            "avg_stars": avg_stars,
-                            "avg_wind": avg_wind,
-                            "avg_gusts": avg_gusts,
-                            "avg_waves": avg_waves,
-                        }
-                    )
-
-            # Sort spots by kiteable hours then average stars
-            day_spots.sort(key=lambda x: (x["hours"], x["avg_stars"]), reverse=True)
-
-            if day_spots:
-                daily_parts.append(f'<div class="day-summary">')
-                daily_parts.append(f'<h3>{day_data["day_str"]}</h3><ul>')
-                for spot_data in day_spots:
-                    wave_info = (
-                        f", Waves: {spot_data['avg_waves']:.1f}m"
-                        if spot_data["avg_waves"] is not None
-                        else ""
-                    )
-                    daily_parts.append(
-                        f'<li><strong>{spot_data["spot"]}</strong> ({spot_data["hours"]} hours)'
-                        f'<div class="stats">'
-                        f'<div class="stars">{self._stars_html(round(spot_data["avg_stars"]))}</div> | '
-                        f'Wind: {spot_data["avg_wind"]:.1f}/{spot_data["avg_gusts"]:.1f}kt{wave_info}'
-                        f"</div></li>"
-                    )
-                daily_parts.append("</ul></div>")
-
-        daily_parts.extend(["</div></div>"])
-
         if not sorted_spots:
             spot_tables = ["<p>No kiteable conditions found.</p>"]
         else:
-            # Build table rows
-            rows = []
+            spot_tables = []
 
-            # Header row
-            header_cells = ["<th>Spot (kiteable hours)</th>"]
-            prev_day = None
+            # Group hours by date
+            hours_by_day: Dict[date, List[str]] = {}
             for hour in sorted_hours:
-                # Handle 'Z' timezone designator for Python 3.8
                 dt = datetime.fromisoformat(hour.replace("Z", "+00:00"))
-                curr_day = dt.date()
+                day = dt.date()
+                if day not in hours_by_day:
+                    hours_by_day[day] = []
+                hours_by_day[day].append(hour)
 
-                # Add day separator class if day changes
-                day_class = ' class="day-start"' if prev_day != curr_day else ""
-                header_cells.append(
-                    f'<th{day_class}>{dt.strftime("%a %d/%m")}<br>{dt.strftime("%H:%M")}</th>'
-                )
-                prev_day = curr_day
-            rows.append(f"<tr>{''.join(header_cells)}</tr>")
+            # Create a table for each day
+            for day, day_hours in sorted(hours_by_day.items()):
+                rows = []
 
-            # Data rows
-            for spot in sorted_spots:
-                cells = [
-                    f"<td class='spotcol'><strong>{spot}</strong> ({spot_kiteable_count[spot]})</td>"
-                ]
-                prev_day = None
-                for hour in sorted_hours:
+                # Header row for this day
+                header_cells = ["<th>Spot (kiteable hours)</th>"]
+                for hour in day_hours:
                     dt = datetime.fromisoformat(hour.replace("Z", "+00:00"))
-                    curr_day = dt.date()
-                    day_class = " day-start" if prev_day != curr_day else ""
-                    prev_day = curr_day
+                    header_cells.append(f'<th>{dt.strftime("%H:%M")}</th>')
+                rows.append(f"<tr>{''.join(header_cells)}</tr>")
 
-                    if hour in all_forecasts and spot in all_forecasts[hour]:
-                        r = all_forecasts[hour][spot]
-                        # Convert dict config back to WindConfig for _calculate_stars
-                        config = WindConfig.model_validate(data["config"])
-                        stars = self._calculate_stars(r["wind_kn"], config) if r["kiteable"] else 0
-                        stars_html = (
-                            f'<div class="stars">{self._stars_html(stars)}</div>'
-                            if r["kiteable"]
-                            else ""
-                        )
-                        cells.append(
-                            f"""
-                            <td class="{'kiteable' if r['kiteable'] else 'not-kiteable'}{day_class}">
-                                <div class="wind">{r['wind_kn']:.1f}/{r['gust_kn']:.1f}kt</div>
-                                <div class="dir">{r['dir']}</div>
-                                {stars_html}
-                                {f'<div class="wave">🌊 {r["wave_m"]:.1f}m</div>' if r['wave_m'] is not None else ''}
-                                {f'<div class="rain">🌧 {r["precip_mm_h"]:.1f}mm</div>' if r['precip_mm_h'] > 0 else ''}
-                            </td>"""
-                        )
-                    else:
-                        cells.append('<td class="no">—</td>')
-                rows.append(f"<tr>{''.join(cells)}</tr>")
+                # Data rows for this day
+                for spot in sorted_spots:
+                    cells = [
+                        f"<td class='spotcol'><strong>{spot}</strong> ({spot_kiteable_count[spot]})</td>"
+                    ]
 
-            spot_tables = [
-                f"""
-                <div class="table-container">
-                    <table class="forecast-table">
-                        {''.join(rows)}
-                    </table>
-                </div>"""
-            ]
+                    for hour in day_hours:
+                        if hour in all_forecasts and spot in all_forecasts[hour]:
+                            r = all_forecasts[hour][spot]
+                            config = WindConfig.model_validate(data["config"])
+                            stars = (
+                                self._calculate_stars(r["wind_kn"], config) if r["kiteable"] else 0
+                            )
+                            stars_html = (
+                                f'<div class="stars">{self._stars_html(stars)}</div>'
+                                if r["kiteable"]
+                                else ""
+                            )
+                            cells.append(
+                                f"""<td class="{'kiteable' if r['kiteable'] else 'not-kiteable'}">
+                                    <div class="wind">{r['wind_kn']:.1f}/{r['gust_kn']:.1f}kt</div>
+                                    <div class="dir">{r['dir']}</div>
+                                    {stars_html}
+                                    {f'<div class="wave">🌊 {r["wave_m"]:.1f}m</div>' if r['wave_m'] is not None else ''}
+                                    {f'<div class="rain">🌧 {r["precip_mm_h"]:.1f}mm</div>' if r['precip_mm_h'] > 0 else ''}
+                                </td>"""
+                            )
+                        else:
+                            cells.append('<td class="no">—</td>')
+                    rows.append(f"<tr>{''.join(cells)}</tr>")
+
+                # Create the day section
+                day_str = day.strftime("%A, %d %B")
+                spot_tables.append(
+                    f"""<div class="day-section">
+                        <h2>{day_str}</h2>
+                        <div class="table-container">
+                            <table class="forecast-table">
+                                {''.join(rows)}
+                            </table>
+                        </div>
+                    </div>"""
+                )
 
         # Add model updates section
         model_info = []
@@ -301,22 +185,18 @@ class ReportRenderer:
 
         if model_info:
             spot_tables.append(
-                f"""
-                <div class="model-updates">
+                f"""<div class="model-updates">
                     <h3>Forecast Model Updates</h3>
                     {''.join(model_info)}
                 </div>"""
             )
-
-        # Only include daily summary if requested
-        report_parts = daily_parts + spot_tables if include_summary else spot_tables
 
         # Convert generated_at timestamp to CET
         generated_at = datetime.fromisoformat(data["generated_at"].replace("Z", "+00:00"))
         cet = pytz.timezone("Europe/Paris")
         generated_at_cet = generated_at.astimezone(cet)
 
-        content = template.replace("<!-- FORECAST_DATA -->", "\n".join(report_parts)).replace(
+        content = template.replace("<!-- FORECAST_DATA -->", "\n".join(spot_tables)).replace(
             "<!-- GENERATED_AT -->", generated_at_cet.strftime("%Y-%m-%dT%H:%M:%S%z (CET)")
         )
 
@@ -325,16 +205,7 @@ class ReportRenderer:
     def generate_jpg(
         self, html_path: Path, jpg_path: Path, viewport: Tuple[int, int] = (2400, 1200)
     ) -> bool:
-        """Generate JPG image from HTML report.
-
-        Args:
-            html_path: Path to HTML file
-            jpg_path: Where to save the JPG
-            viewport: Browser viewport dimensions
-
-        Returns:
-            True if successful, False otherwise
-        """
+        """Generate JPG image from HTML report."""
         logger.info(f"Generating JPG from {html_path}")
 
         # Check if any renderer is available
@@ -357,11 +228,7 @@ class ReportRenderer:
         return False
 
     def _find_chrome(self) -> Optional[str]:
-        """Find Chrome/Chromium executable.
-
-        Returns:
-            Path to Chrome/Chromium executable if found, None otherwise.
-        """
+        """Find Chrome/Chromium executable."""
         # Standard executable names
         chrome_names = ["google-chrome", "chrome", "chromium", "chromium-browser"]
         for name in chrome_names:
@@ -383,17 +250,7 @@ class ReportRenderer:
     def _try_chrome(
         self, chrome_path: str, html_path: Path, jpg_path: Path, viewport: Tuple[int, int]
     ) -> bool:
-        """Try generating image with Chrome/Chromium.
-
-        Args:
-            chrome_path: Path to Chrome/Chromium executable
-            html_path: Path to source HTML file
-            jpg_path: Path to output JPG file
-            viewport: Browser viewport dimensions
-
-        Returns:
-            True if conversion successful, False otherwise
-        """
+        """Try generating image with Chrome/Chromium."""
         html_abs = html_path.absolute()
         jpg_abs = jpg_path.absolute()
         tmp_png = jpg_abs.with_suffix(".png")
@@ -435,16 +292,7 @@ class ReportRenderer:
             return False
 
     def _try_wkhtmltoimage(self, wk_path: str, html_path: Path, jpg_path: Path) -> bool:
-        """Try generating image with wkhtmltoimage.
-
-        Args:
-            wk_path: Path to wkhtmltoimage executable
-            html_path: Path to source HTML file
-            jpg_path: Path to output JPG file
-
-        Returns:
-            True if conversion successful, False otherwise
-        """
+        """Try generating image with wkhtmltoimage."""
         try:
             cmd = [wk_path, str(html_path), str(jpg_path)]
             subprocess.run(cmd, check=True, capture_output=True)
@@ -457,15 +305,7 @@ class ReportRenderer:
             return False
 
     def generate_pdf(self, html_path: Path, pdf_path: Path) -> bool:
-        """Generate PDF from HTML report.
-
-        Args:
-            html_path: Path to HTML file
-            pdf_path: Where to save the PDF
-
-        Returns:
-            True if successful, False otherwise
-        """
+        """Generate PDF from HTML report with day-by-day tables."""
         logger.info(f"Generating PDF from {html_path}")
 
         # Check if Chrome is available
@@ -479,10 +319,28 @@ class ReportRenderer:
                 chrome_path,
                 "--headless",
                 "--disable-gpu",
-                "--print-to-pdf=" + str(pdf_path.absolute()),
+                "--no-sandbox",
+                "--virtual-time-budget=5000",  # Give time for any JS to execute
+                "--window-size=3000,2000",  # Viewport size for each page
+                "--hide-scrollbars",
+                "--run-all-compositor-stages-before-draw",
+                "--disable-web-security",
+                "--print-to-pdf-no-header",
+                "--force-device-scale-factor=0.75",  # Adjust scale for readability
+                "--print-to-pdf-orientation=landscape",
+                f"--print-to-pdf={pdf_path.absolute()}",
                 f"file://{html_path.absolute()}",
             ]
-            subprocess.run(cmd, check=True, capture_output=True)
+
+            # Run Chrome in headless mode to generate the PDF
+            result = subprocess.run(cmd, check=True, capture_output=True, text=True)
+
+            # Check if the PDF was created
+            if not pdf_path.exists():
+                logger.error("PDF file was not created")
+                return False
+
+            logger.info("Successfully generated PDF with day-by-day tables")
             return True
 
         except subprocess.CalledProcessError as e:
