@@ -4,6 +4,7 @@ import logging
 import shutil
 import subprocess
 import sys
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, Optional, Tuple
 
@@ -34,6 +35,26 @@ class ReportRenderer:
         """
         self.template_dir = template_dir or (Path(__file__).parent / "templates")
 
+    @staticmethod
+    def _calculate_stars(wind_kn: float) -> int:
+        """Calculate star rating based on wind speed."""
+        if wind_kn >= 25:
+            return 5
+        elif wind_kn >= 20:
+            return 4
+        elif wind_kn >= 17:
+            return 3
+        elif wind_kn >= 15:
+            return 2
+        elif wind_kn >= 12:
+            return 1
+        return 0
+
+    @staticmethod
+    def _stars_html(count: int) -> str:
+        """Generate HTML for star rating."""
+        return "★" * count
+
     def render_html(self, data: Dict[str, Any], output_path: Path) -> None:
         """
         Render forecast data to HTML report.
@@ -45,41 +66,104 @@ class ReportRenderer:
         with open(self.template_dir / "report.html") as f:
             template = f.read()
 
-        # Convert data to HTML
-        spot_tables = []
+        # Collect all forecast data and count kiteable hours per spot
+        all_forecasts: Dict[str, Dict[str, Any]] = {}
+        spot_kiteable_count: Dict[str, int] = {}
+
         for spot in data["spots"]:
-            rows = []
+            kiteable_count = 0
             for r in spot["rows"]:
-                rows.append(
-                    f"""
-                <tr class="{r['band']}">
-                    <td>{r['time']}</td>
-                    <td>{r['wind_kn']:.1f}</td>
-                    <td>{r['gust_kn']:.1f}</td>
-                    <td>{r['dir']} ({r['dir_deg']}°)</td>
-                    <td>{r['precip_mm_h']:.1f}</td>
-                    <td>{r['wave_m']:.1f if r['wave_m'] is not None else '-'}</td>
-                    <td>{r['band']}</td>
-                </tr>"""
+                time = r["time"]
+                if time not in all_forecasts:
+                    all_forecasts[time] = {}
+                all_forecasts[time][spot["spot"]] = r
+                if r["kiteable"]:
+                    kiteable_count += 1
+            if kiteable_count > 0:  # Only include spots that have kiteable conditions
+                spot_kiteable_count[spot["spot"]] = kiteable_count
+
+        # Find times with at least one kiteable condition
+        kiteable_hours = {
+            time
+            for time, spots in all_forecasts.items()
+            if any(r["kiteable"] for r in spots.values())
+        }
+
+        # Sort hours chronologically and spots by kiteable hours
+        sorted_hours = sorted(kiteable_hours)
+        sorted_spots = sorted(
+            spot_kiteable_count.keys(), key=lambda s: spot_kiteable_count[s], reverse=True
+        )
+
+        if not sorted_spots:
+            spot_tables = ["<p>No kiteable conditions found.</p>"]
+        else:
+            # Build table rows
+            rows = []
+
+            # Header row
+            header_cells = ["<th>Spot (kiteable hours)</th>"]
+            for hour in sorted_hours:
+                dt = datetime.fromisoformat(hour)
+                header_cells.append(f"<th>{dt.strftime('%d/%m %H:%M')}</th>")
+            rows.append(f"<tr>{''.join(header_cells)}</tr>")
+
+            # Data rows
+            for spot in sorted_spots:
+                cells = [
+                    f"<td class='spotcol'><strong>{spot}</strong> ({spot_kiteable_count[spot]})</td>"
+                ]
+                for hour in sorted_hours:
+                    if hour in all_forecasts and spot in all_forecasts[hour]:
+                        r = all_forecasts[hour][spot]
+                        stars = self._calculate_stars(r["wind_kn"]) if r["kiteable"] else 0
+                        stars_html = (
+                            f'<div class="stars">{self._stars_html(stars)}</div>'
+                            if r["kiteable"]
+                            else ""
+                        )
+                        cells.append(
+                            f"""
+                            <td class="{'kiteable' if r['kiteable'] else 'not-kiteable'}">
+                                <div class="wind">{r['wind_kn']:.0f}/{r['gust_kn']:.0f}kt</div>
+                                <div class="dir">{r['dir']}</div>
+                                {stars_html}
+                                {f'<div class="wave">🌊 {r["wave_m"]:.1f}m</div>' if r['wave_m'] is not None else ''}
+                                {f'<div class="rain">🌧 {r["precip_mm_h"]:.1f}mm</div>' if r['precip_mm_h'] > 0 else ''}
+                            </td>"""
+                        )
+                    else:
+                        cells.append('<td class="no">—</td>')
+                rows.append(f"<tr>{''.join(cells)}</tr>")
+
+            spot_tables = [
+                f"""
+                <div class="table-container">
+                    <table class="forecast-table">
+                        {''.join(rows)}
+                    </table>
+                </div>"""
+            ]
+
+        # Add model updates section
+        model_info = []
+        for model_id, info in data.get("model_updates", {}).items():
+            if info.get("run"):
+                run_time = datetime.fromisoformat(info["run"].replace("Z", "+00:00"))
+                model_info.append(
+                    f"""<div class="model-info">
+                        <span class="model-name">{info['title']}</span>
+                        <span class="model-run">Run: {run_time.strftime('%Y-%m-%d %H:%M')} UTC</span>
+                    </div>"""
                 )
 
+        if model_info:
             spot_tables.append(
                 f"""
-            <section>
-                <h2>{spot['spot']}</h2>
-                <table>
-                    <tr>
-                        <th>Time</th>
-                        <th>Wind (kn)</th>
-                        <th>Gust (kn)</th>
-                        <th>Direction</th>
-                        <th>Rain (mm/h)</th>
-                        <th>Wave (m)</th>
-                        <th>Band</th>
-                    </tr>
-                    {''.join(rows)}
-                </table>
-            </section>"""
+                <div class="model-updates">
+                    <h3>Forecast Model Updates</h3>
+                    {''.join(model_info)}
+                </div>"""
             )
 
         content = template.replace("<!-- FORECAST_DATA -->", "\n".join(spot_tables)).replace(
