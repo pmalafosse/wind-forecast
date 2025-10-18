@@ -29,6 +29,9 @@ def parse_args() -> argparse.Namespace:
         "--out-dir", type=Path, default=Path("out"), help="Output directory (default: ./out)"
     )
     parser.add_argument("--jpg", action="store_true", help="Generate JPG snapshot of the report")
+    parser.add_argument(
+        "--summary", action="store_true", help="Include daily summary section in the report"
+    )
     parser.add_argument("--verbose", "-v", action="store_true", help="Enable debug logging")
     parser.add_argument("--version", action="version", version=f"windforecast {__version__}")
     return parser.parse_args()
@@ -63,7 +66,7 @@ def main() -> int:
         renderer = ReportRenderer()
 
         html_path = out_dir / "report.html"
-        renderer.render_html(data, html_path)
+        renderer.render_html(data, html_path, include_summary=args.summary)
         logger.info(f"Wrote {html_path}")
 
         if args.jpg:

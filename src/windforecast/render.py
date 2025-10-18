@@ -83,12 +83,15 @@ class ReportRenderer:
         """Generate HTML for star rating."""
         return "★" * count
 
-    def render_html(self, data: Dict[str, Any], output_path: Path) -> None:
+    def render_html(
+        self, data: Dict[str, Any], output_path: Path, include_summary: bool = False
+    ) -> None:
         """Render forecast data to HTML report.
 
         Args:
             data: Processed forecast data dictionary with spots and forecasts
             output_path: Where to save the HTML file
+            include_summary: Whether to include the daily summary section
         """
         with open(self.template_dir / "report.html") as f:
             template = f.read()
@@ -303,9 +306,11 @@ class ReportRenderer:
                 </div>"""
             )
 
-        content = template.replace(
-            "<!-- FORECAST_DATA -->", "\n".join(daily_parts + spot_tables)
-        ).replace("<!-- GENERATED_AT -->", data["generated_at"])
+        # Only include daily summary if requested
+        report_parts = daily_parts + spot_tables if include_summary else spot_tables
+        content = template.replace("<!-- FORECAST_DATA -->", "\n".join(report_parts)).replace(
+            "<!-- GENERATED_AT -->", data["generated_at"]
+        )
 
         output_path.write_text(content)
 
