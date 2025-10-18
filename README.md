@@ -99,11 +99,14 @@ windforecast
 # Generate JPG snapshot
 windforecast --jpg
 
+# Generate PDF version
+windforecast --pdf
+
 # Include daily summary section
 windforecast --summary
 
-# Generate JPG with daily summary
-windforecast --jpg --summary
+# Generate both JPG and PDF with daily summary
+windforecast --jpg --pdf --summary
 
 # Custom configuration
 windforecast --config path/to/config.json

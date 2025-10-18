@@ -455,3 +455,39 @@ class ReportRenderer:
         except Exception as e:
             logger.error(f"Error generating JPG: {e}")
             return False
+
+    def generate_pdf(self, html_path: Path, pdf_path: Path) -> bool:
+        """Generate PDF from HTML report.
+
+        Args:
+            html_path: Path to HTML file
+            pdf_path: Where to save the PDF
+
+        Returns:
+            True if successful, False otherwise
+        """
+        logger.info(f"Generating PDF from {html_path}")
+
+        # Check if Chrome is available
+        chrome_path = self._find_chrome()
+        if not chrome_path:
+            logger.error("Could not find Chrome/Chromium for PDF generation")
+            return False
+
+        try:
+            cmd = [
+                chrome_path,
+                "--headless",
+                "--disable-gpu",
+                "--print-to-pdf=" + str(pdf_path.absolute()),
+                f"file://{html_path.absolute()}",
+            ]
+            subprocess.run(cmd, check=True, capture_output=True)
+            return True
+
+        except subprocess.CalledProcessError as e:
+            logger.error(f"Chrome PDF generation failed: {e.stderr}")
+            return False
+        except Exception as e:
+            logger.error(f"Error generating PDF: {e}")
+            return False

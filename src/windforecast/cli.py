@@ -29,6 +29,7 @@ def parse_args() -> argparse.Namespace:
         "--out-dir", type=Path, default=Path("out"), help="Output directory (default: ./out)"
     )
     parser.add_argument("--jpg", action="store_true", help="Generate JPG snapshot of the report")
+    parser.add_argument("--pdf", action="store_true", help="Generate PDF version of the report")
     parser.add_argument(
         "--summary", action="store_true", help="Include daily summary section in the report"
     )
@@ -69,13 +70,22 @@ def main() -> int:
         renderer.render_html(data, html_path, include_summary=args.summary)
         logger.info(f"Wrote {html_path}")
 
-        if args.jpg:
-            jpg_path = out_dir / "report.jpg"
-            if renderer.generate_jpg(html_path, jpg_path):
-                logger.info(f"Wrote {jpg_path}")
-            else:
-                logger.error("Failed to generate JPG")
-                return 1
+        if args.jpg or args.pdf:
+            if args.jpg:
+                jpg_path = out_dir / "report.jpg"
+                if renderer.generate_jpg(html_path, jpg_path):
+                    logger.info(f"Wrote {jpg_path}")
+                else:
+                    logger.error("Failed to generate JPG")
+                    return 1
+
+            if args.pdf:
+                pdf_path = out_dir / "report.pdf"
+                if renderer.generate_pdf(html_path, pdf_path):
+                    logger.info(f"Wrote {pdf_path}")
+                else:
+                    logger.error("Failed to generate PDF")
+                    return 1
 
         return 0
 
