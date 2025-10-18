@@ -5,6 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Wind Forecast Report</title>
     <style>
+        /* High DPI Optimizations */
+        html {
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            text-rendering: optimizeLegibility;
+        }
+    </style>
+    <style>
         @media print {
             body {
                 margin: 0;
@@ -33,7 +41,11 @@
                 transform: none !important;
             }
             td, th {
-                min-width: 120px !important;
+                min-width: 84px !important;
+            }
+            td:first-child, th:first-child {
+                max-width: 80px !important;
+                min-width: 60px !important;
             }
         }
         body {
@@ -72,10 +84,17 @@
             margin: 0;
         }
         th, td {
-            padding: 12px;
+            padding: 8px;
             text-align: center;
-            min-width: 120px;
+            min-width: 84px;
             border: 1px solid #dee2e6;
+        }
+        th:first-child, td:first-child {
+            max-width: 80px;
+            min-width: 60px !important;
+        }
+        th:first-child {
+            font-weight: bold;
         }
         th {
             background-color: #34495e;
@@ -84,28 +103,36 @@
             top: 0;
             z-index: 10;
             white-space: nowrap;
+            font-size: 0.95em;
         }
         td {
             vertical-align: top;
         }
-        .spotcol {
+                .spotcol {
             position: sticky;
             left: 0;
-            background: white;
+            background: rgba(255, 255, 255, 0.4);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
             z-index: 5;
             text-align: left;
             font-weight: 500;
+            max-width: 80px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            padding-right: 8px;
         }
         .wind {
-            font-size: 1.1em;
+            font-size: 0.95em;
             font-weight: 600;
         }
         .dir {
-            font-size: 0.9em;
+            font-size: 0.8em;
         }
         .wave, .rain {
-            font-size: 0.85em;
-            margin-top: 2px;
+            font-size: 0.75em;
+            margin-top: 1px;
         }
         .timestamp {
             color: #6c757d;
@@ -204,9 +231,9 @@
         }
         .stars {
             color: #f1c40f;
-            margin-top: 4px;
-            font-size: 1.1em;
-            letter-spacing: 1px;
+            margin-top: 2px;
+            font-size: 0.95em;
+            letter-spacing: 0.5px;
         }
         .day-start {
             border-left: 2px solid #2c3e50 !important;

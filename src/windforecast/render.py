@@ -6,7 +6,7 @@ import subprocess
 import sys
 from datetime import date, datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 import pytz
 
@@ -66,6 +66,73 @@ class ReportRenderer:
         """Generate HTML for star rating."""
         return "★" * count
 
+    def _generate_daily_summary(
+        self, data: Dict[str, Any], spots: List[str], all_forecasts: Dict[str, Dict[str, Any]]
+    ) -> Optional[str]:
+        """Generate a summary section with daily highlights."""
+        days_data: Dict[date, Dict[str, List[Dict[str, Any]]]] = {}
+
+        # Group forecasts by day and spot
+        for time, spots_data in all_forecasts.items():
+            dt = datetime.fromisoformat(time.replace("Z", "+00:00"))
+            day = dt.date()
+
+            if day not in days_data:
+                days_data[day] = {}
+
+            for spot, forecast in spots_data.items():
+                if forecast["kiteable"]:
+                    if spot not in days_data[day]:
+                        days_data[day][spot] = []
+                    days_data[day][spot].append(
+                        {
+                            "time": dt,
+                            "wind_kn": forecast["wind_kn"],
+                            "gust_kn": forecast["gust_kn"],
+                            "stars": self._calculate_stars(
+                                forecast["wind_kn"], WindConfig.model_validate(data["config"])
+                            ),
+                        }
+                    )
+
+        if not days_data:
+            return None
+
+        # Generate summary HTML
+        sections = []
+        for day, spots_data in sorted(days_data.items()):
+            day_spots = []
+            for spot, forecasts in spots_data.items():
+                best_forecast = max(forecasts, key=lambda f: f["stars"])
+                avg_wind = sum(f["wind_kn"] for f in forecasts) / len(forecasts)
+                max_gust = max(f["gust_kn"] for f in forecasts)
+
+                hours = sorted([f["time"].strftime("%H:%M") for f in forecasts])
+                time_range = f"{hours[0]}-{hours[-1]}"
+
+                spot_html = f"""<li>
+                    <strong>{spot}</strong>: {len(forecasts)} kiteable hours ({time_range})
+                    <div class="stats">
+                        Avg wind: {avg_wind:.1f}kt, Max gust: {max_gust:.1f}kt
+                        <div class="stars">{self._stars_html(best_forecast["stars"])}</div>
+                    </div>
+                </li>"""
+                day_spots.append(spot_html)
+
+            if day_spots:
+                day_str = day.strftime("%A, %d %B")
+                sections.append(
+                    f"""<div class="day-summary">
+                    <h3>{day_str}</h3>
+                    <ul>{''.join(day_spots)}</ul>
+                </div>"""
+                )
+
+        return f"""<div class="daily-summary">
+            <h2>Daily Summary</h2>
+            <div class="daily-grid">{''.join(sections)}</div>
+        </div>"""
+
     def render_html(
         self, data: Dict[str, Any], output_path: Path, include_summary: bool = False
     ) -> None:
@@ -107,56 +174,84 @@ class ReportRenderer:
         else:
             spot_tables = []
 
-            # Group hours by date
+            # Add daily summary if requested
+            if include_summary:
+                daily_summary = self._generate_daily_summary(data, sorted_spots, all_forecasts)
+                if daily_summary:
+                    spot_tables.append(daily_summary)
+
+            # Group hours by date and track kiteable hours per spot per day
             hours_by_day: Dict[date, List[str]] = {}
+            spot_kiteable_by_day: Dict[date, Dict[str, int]] = {}
+            kiteable_hours_by_day: Dict[date, Set[str]] = {}
+
             for hour in sorted_hours:
                 dt = datetime.fromisoformat(hour.replace("Z", "+00:00"))
                 day = dt.date()
+
+                # Initialize day structures if needed
                 if day not in hours_by_day:
                     hours_by_day[day] = []
-                hours_by_day[day].append(hour)
+                    spot_kiteable_by_day[day] = {}
+                    kiteable_hours_by_day[day] = set()
+
+                # Only include hours where at least one spot is kiteable
+                has_kiteable_spot = False
+                for spot, spot_data in all_forecasts[hour].items():
+                    if spot_data["kiteable"]:
+                        has_kiteable_spot = True
+                        spot_kiteable_by_day[day][spot] = spot_kiteable_by_day[day].get(spot, 0) + 1
+
+                if has_kiteable_spot:
+                    hours_by_day[day].append(hour)
+                    kiteable_hours_by_day[day].add(hour)
 
             # Create a table for each day
             for day, day_hours in sorted(hours_by_day.items()):
                 rows = []
+                daily_spots = [s for s in sorted_spots if spot_kiteable_by_day[day].get(s, 0) > 0]
+                # Sort spots based on kiteable hours for this specific day
+                daily_spots.sort(key=lambda s: spot_kiteable_by_day[day].get(s, 0), reverse=True)
 
                 # Header row for this day
-                header_cells = ["<th>Spot (kiteable hours)</th>"]
-                for hour in day_hours:
+                header_cells = ["<th>Spot</th>"]
+                for hour in sorted(kiteable_hours_by_day[day]):
                     dt = datetime.fromisoformat(hour.replace("Z", "+00:00"))
                     header_cells.append(f'<th>{dt.strftime("%H:%M")}</th>')
                 rows.append(f"<tr>{''.join(header_cells)}</tr>")
 
-                # Data rows for this day
-                for spot in sorted_spots:
-                    cells = [
-                        f"<td class='spotcol'><strong>{spot}</strong> ({spot_kiteable_count[spot]})</td>"
-                    ]
+                # Data rows for this day's kiteable spots
+                for spot in daily_spots:
+                    daily_kiteable_hours = spot_kiteable_by_day[day].get(spot, 0)
+                    if daily_kiteable_hours > 0:  # Only include spots with kiteable hours today
+                        cells = [f"<td class='spotcol'><strong>{spot}</strong></td>"]
 
-                    for hour in day_hours:
-                        if hour in all_forecasts and spot in all_forecasts[hour]:
-                            r = all_forecasts[hour][spot]
-                            config = WindConfig.model_validate(data["config"])
-                            stars = (
-                                self._calculate_stars(r["wind_kn"], config) if r["kiteable"] else 0
-                            )
-                            stars_html = (
-                                f'<div class="stars">{self._stars_html(stars)}</div>'
-                                if r["kiteable"]
-                                else ""
-                            )
-                            cells.append(
-                                f"""<td class="{'kiteable' if r['kiteable'] else 'not-kiteable'}">
-                                    <div class="wind">{r['wind_kn']:.1f}/{r['gust_kn']:.1f}kt</div>
-                                    <div class="dir">{r['dir']}</div>
-                                    {stars_html}
-                                    {f'<div class="wave">🌊 {r["wave_m"]:.1f}m</div>' if r['wave_m'] is not None else ''}
-                                    {f'<div class="rain">🌧 {r["precip_mm_h"]:.1f}mm</div>' if r['precip_mm_h'] > 0 else ''}
-                                </td>"""
-                            )
-                        else:
-                            cells.append('<td class="no">—</td>')
-                    rows.append(f"<tr>{''.join(cells)}</tr>")
+                        for hour in sorted(kiteable_hours_by_day[day]):
+                            if hour in all_forecasts and spot in all_forecasts[hour]:
+                                r = all_forecasts[hour][spot]
+                                config = WindConfig.model_validate(data["config"])
+                                stars = (
+                                    self._calculate_stars(r["wind_kn"], config)
+                                    if r["kiteable"]
+                                    else 0
+                                )
+                                stars_html = (
+                                    f'<div class="stars">{self._stars_html(stars)}</div>'
+                                    if r["kiteable"]
+                                    else ""
+                                )
+                                cells.append(
+                                    f"""<td class="{'kiteable' if r['kiteable'] else 'not-kiteable'}">
+                                        <div class="wind">{r['wind_kn']:.1f}/{r['gust_kn']:.1f}kt</div>
+                                        <div class="dir">{r['dir']}</div>
+                                        {stars_html}
+                                        {f'<div class="wave">🌊 {r["wave_m"]:.1f}m</div>' if r['wave_m'] is not None else ''}
+                                        {f'<div class="rain">🌧 {r["precip_mm_h"]:.1f}mm</div>' if r['precip_mm_h'] > 0 else ''}
+                                    </td>"""
+                                )
+                            else:
+                                cells.append('<td class="no">—</td>')
+                        rows.append(f"<tr>{''.join(cells)}</tr>")
 
                 # Create the day section
                 day_str = day.strftime("%A, %d %B")
@@ -202,11 +297,53 @@ class ReportRenderer:
 
         output_path.write_text(content)
 
+    def _calculate_viewport(self, html_content: str) -> Tuple[int, int]:
+        """Calculate optimal viewport size based on table content."""
+        from bs4 import BeautifulSoup
+
+        soup = BeautifulSoup(html_content, "html.parser")
+        max_columns = 0
+        total_height = 0
+
+        # Calculate dimensions from all day sections
+        day_sections = soup.find_all("div", class_="day-section")
+        for section in day_sections:
+            table = section.find("table")
+            if table:
+                rows = table.find_all("tr")
+                if rows:
+                    # Count columns in first row (header)
+                    columns = len(rows[0].find_all(["th", "td"]))
+                    max_columns = max(max_columns, columns)
+                    total_height += len(rows) * 40  # Approximate height per row
+
+        # Calculate dimensions
+        # Base width per column (minimum 100px)
+        column_width = 100
+        # First column is narrower (60px) and we add some padding
+        width = 60 + (max_columns - 1) * column_width + 40  # +40px for padding
+        # Add height for headers, padding, and other elements
+        height = total_height + (
+            len(day_sections) * 100
+        )  # 100px extra per section for header and margins
+
+        # Ensure minimum dimensions and reasonable maximum
+        width = max(800, min(width, 7200))
+        height = max(600, min(height, 4800))
+
+        return (width, height)
+
     def generate_jpg(
-        self, html_path: Path, jpg_path: Path, viewport: Tuple[int, int] = (2400, 1200)
+        self, html_path: Path, jpg_path: Path, viewport: Optional[Tuple[int, int]] = None
     ) -> bool:
-        """Generate JPG image from HTML report."""
+        """Generate JPG image from HTML report with dynamic resolution."""
         logger.info(f"Generating JPG from {html_path}")
+
+        # Calculate viewport size from content if not provided
+        if viewport is None:
+            content = html_path.read_text()
+            viewport = self._calculate_viewport(content)
+            logger.info(f"Calculated viewport size: {viewport[0]}x{viewport[1]}")
 
         # Check if any renderer is available
         chrome_path = self._find_chrome()
@@ -258,11 +395,18 @@ class ReportRenderer:
         try:
             cmd = [
                 chrome_path,
-                "--headless",
+                "--headless=new",  # Use new headless mode
                 "--disable-gpu",
                 f"--window-size={viewport[0]},{viewport[1]}",
                 "--hide-scrollbars",
+                "--force-device-scale-factor=1.0",  # Full resolution
                 "--screenshot=" + str(tmp_png),
+                "--disable-features=TranslateUI",  # Disable UI elements that might affect rendering
+                "--high-dpi-support=1",  # Enable high DPI support
+                "--enable-high-resolution-time",  # Better timing for rendering
+                "--full-page",  # Capture full page height
+                "--no-margins",  # Remove any margins from the screenshot
+                "--virtual-time-budget=1000",  # Allow time for full page rendering
                 f"file://{html_abs}",
             ]
             subprocess.run(cmd, check=True, capture_output=True)
@@ -270,7 +414,7 @@ class ReportRenderer:
             if HAS_PILLOW:
                 img = Image.open(tmp_png)  # type: ignore
                 rgb = img.convert("RGB")
-                rgb.save(jpg_abs, "JPEG", quality=90)
+                rgb.save(jpg_abs, "JPEG", quality=100, optimize=True, subsampling=0)
                 tmp_png.unlink()
                 return True
             elif sys.platform == "darwin":
