@@ -58,4 +58,5 @@ jobs:
             exit 0
           fi
           git commit -m "chore: Update forecast report $(date +%Y-%m-%d_%H:%M)"
-          git push origin reports
+          # Force push since we're resetting the branch
+          git push -f origin reports
