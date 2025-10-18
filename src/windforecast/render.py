@@ -26,28 +26,56 @@ logger = logging.getLogger(__name__)
 class ReportRenderer:
     """HTML and image report renderer."""
 
-    def __init__(self, template_dir: Optional[Path] = None):
-        """
-        Initialize renderer with optional custom template directory.
+    def __init__(self, config: Optional[WindConfig] = None, template_dir: Optional[Path] = None):
+        """Initialize renderer with optional config and custom template directory.
 
         Args:
+            config: WindConfig object containing wind band thresholds
             template_dir: Path to custom HTML templates. If None, uses built-in templates.
         """
+        self.config = config
         self.template_dir = template_dir or (Path(__file__).parent / "templates")
 
-    @staticmethod
-    def _calculate_stars(wind_kn: float) -> int:
-        """Calculate star rating based on wind speed."""
-        if wind_kn >= 25:
-            return 5
-        elif wind_kn >= 20:
-            return 4
-        elif wind_kn >= 17:
-            return 3
-        elif wind_kn >= 15:
-            return 2
-        elif wind_kn >= 12:
-            return 1
+    def _calculate_stars(self, wind_kn: float, config: WindConfig) -> int:
+        """Calculate star rating based on wind speed and config bands.
+
+        The star rating scale is:
+        - 6 stars: Insane (expert-only conditions)
+        - 5 stars: Great (perfect conditions)
+        - 4 stars: Very good conditions
+        - 3 stars: Good/Hardcore (challenging conditions)
+        - 2 stars: OK conditions
+        - 1 star:  Light conditions
+        - 0 stars: Too light or too strong
+
+        Args:
+            wind_kn: Wind speed in knots
+            config: Configuration object containing wind bands
+
+        Returns:
+            Integer from 0 to 6 representing the star rating
+        """
+        bands = config.conditions.bands
+
+        # Skip "too much" (dangerous conditions)
+        if wind_kn >= bands[0][1]:  # Above "too much" threshold
+            return 0
+
+        star_mapping = {
+            "hardcore": 3,  # Challenging conditions
+            "insane": 6,  # Expert conditions (highest rating)
+            "great": 5,  # Perfect conditions
+            "very good": 4,  # Very good conditions
+            "good": 3,  # Good conditions
+            "ok": 2,  # Acceptable conditions
+            "light": 1,  # Light wind conditions
+            "below": 0,  # Too light
+        }
+
+        # Find the appropriate band
+        for band_name, threshold in bands:
+            if wind_kn >= threshold:
+                return star_mapping.get(band_name, 0)
         return 0
 
     @staticmethod
@@ -56,8 +84,7 @@ class ReportRenderer:
         return "★" * count
 
     def render_html(self, data: Dict[str, Any], output_path: Path) -> None:
-        """
-        Render forecast data to HTML report.
+        """Render forecast data to HTML report.
 
         Args:
             data: Processed forecast data dictionary with spots and forecasts
@@ -117,7 +144,11 @@ class ReportRenderer:
                 for hour in sorted_hours:
                     if hour in all_forecasts and spot in all_forecasts[hour]:
                         r = all_forecasts[hour][spot]
-                        stars = self._calculate_stars(r["wind_kn"]) if r["kiteable"] else 0
+                        stars = (
+                            self._calculate_stars(r["wind_kn"], data["config"])
+                            if r["kiteable"]
+                            else 0
+                        )
                         stars_html = (
                             f'<div class="stars">{self._stars_html(stars)}</div>'
                             if r["kiteable"]
