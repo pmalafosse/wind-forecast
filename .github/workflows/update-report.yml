@@ -38,11 +38,14 @@ jobs:
 
       - name: Create reports branch from main
         run: |
-          # Reset to main branch content
+          # Fetch both branches
           git fetch origin main
+          git fetch origin reports
+          # Reset to main branch content
           git reset --hard origin/main
-          # Create new reports branch, overwriting if it exists
-          git checkout -B reports
+          # Delete local reports branch if it exists and create new one
+          git branch -D reports || true
+          git checkout -b reports
 
       - name: Generate report
         run: |
@@ -58,5 +61,5 @@ jobs:
             exit 0
           fi
           git commit -m "chore: Update forecast report $(date +%Y-%m-%d_%H:%M)"
-          # Force push since we're resetting the branch
-          git push -f origin reports
+          # Force push and overwrite remote branch completely
+          git push origin +reports
