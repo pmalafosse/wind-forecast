@@ -8,6 +8,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
+import pytz
+
 from .schemas import WindConfig
 
 logger = logging.getLogger(__name__)
@@ -308,8 +310,14 @@ class ReportRenderer:
 
         # Only include daily summary if requested
         report_parts = daily_parts + spot_tables if include_summary else spot_tables
+
+        # Convert generated_at timestamp to CET
+        generated_at = datetime.fromisoformat(data["generated_at"].replace("Z", "+00:00"))
+        cet = pytz.timezone("Europe/Paris")
+        generated_at_cet = generated_at.astimezone(cet)
+
         content = template.replace("<!-- FORECAST_DATA -->", "\n".join(report_parts)).replace(
-            "<!-- GENERATED_AT -->", data["generated_at"]
+            "<!-- GENERATED_AT -->", generated_at_cet.strftime("%Y-%m-%dT%H:%M:%S%z (CET)")
         )
 
         output_path.write_text(content)

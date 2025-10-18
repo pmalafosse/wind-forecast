@@ -26,4 +26,5 @@ repos:
           - types-requests
           - types-Pillow
           - types-setuptools
+          - types-pytz
         exclude: ^tests/
