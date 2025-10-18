@@ -131,8 +131,9 @@ Example:
     }
   }],
 
-  // Wind sectors visualization:
+  // Here's a visualization of how wind sectors work:
   ![Wind Sectors Example](docs/images/wind_sectors.png)
+
   "forecast": {
     "model": "arome_france_hd",
     "hourly_vars": "wind_speed_10m,wind_direction_10m",
