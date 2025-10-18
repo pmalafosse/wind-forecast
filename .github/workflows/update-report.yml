@@ -43,9 +43,6 @@ jobs:
           git fetch origin reports
           # Reset to main branch content
           git reset --hard origin/main
-          # Delete local reports branch if it exists and create new one
-          git branch -D reports || true
-          git checkout -b reports
 
       - name: Generate report
         run: |
@@ -56,10 +53,6 @@ jobs:
       - name: Commit and push changes
         run: |
           git add index.html
-          if git diff --cached --quiet; then
-            echo "No changes to commit"
-            exit 0
-          fi
           git commit -m "chore: Update forecast report $(date +%Y-%m-%d_%H:%M)"
           # Force push to overwrite remote branch completely
-          git push --force-with-lease origin reports
+          git push --force origin reports
