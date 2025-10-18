@@ -1,5 +1,8 @@
 # wind-forecast
 
+[![Tests](https://github.com/pmalafosse/wind-forecast/actions/workflows/tests.yml/badge.svg)](https://github.com/pmalafosse/wind-forecast/actions/workflows/tests.yml)
+[![codecov](https://codecov.io/gh/pmalafosse/wind-forecast/branch/main/graph/badge.svg)](https://codecov.io/gh/pmalafosse/wind-forecast)
+
 > **AI Notice**: This project was developed with the assistance of GitHub Copilot, an AI pair programming tool. All code, documentation, and tests were written collaboratively between a human developer and AI, showcasing the potential of AI-assisted software development.
 
 A professional wind forecast analyzer and report generator for kitesurfing conditions. Fetches data from AROME HD model and generates interactive HTML reports with JPG snapshots.
