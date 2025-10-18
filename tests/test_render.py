@@ -24,13 +24,55 @@ def test_renderer_init():
 
 def test_calculate_stars():
     """Test star rating calculation based on wind speed."""
+    from windforecast.schemas import WindConfig
+
+    # Create a test config
+    test_config = WindConfig.model_validate(
+        {
+            "spots": [
+                {
+                    "name": "Test Spot",
+                    "lat": 0.0,
+                    "lon": 0.0,
+                    "dir_sector": {"start": 0, "end": 360, "wrap": False},
+                }
+            ],
+            "forecast": {
+                "model": "test",
+                "hourly_vars": "wind_speed_10m",
+                "wave_vars": "wave_height",
+                "forecast_hours_hourly": 48,
+                "forecast_min15": 24,
+            },
+            "time_window": {"day_start": 6, "day_end": 20},
+            "conditions": {
+                "bands": [
+                    ["too much", 40],
+                    ["hardcore", 35],
+                    ["insane", 30],
+                    ["great", 25],
+                    ["very good", 20],
+                    ["good", 17],
+                    ["ok", 15],
+                    ["light", 12],
+                    ["below", 0],
+                ],
+                "rain_limit": 0.5,
+            },
+        }
+    )
+
     renderer = ReportRenderer()
-    assert renderer._calculate_stars(25) == 5
-    assert renderer._calculate_stars(20) == 4
-    assert renderer._calculate_stars(17) == 3
-    assert renderer._calculate_stars(15) == 2
-    assert renderer._calculate_stars(12) == 1
-    assert renderer._calculate_stars(10) == 0
+    # Test all bands with expected star ratings
+    assert renderer._calculate_stars(42, test_config) == 0  # too much
+    assert renderer._calculate_stars(36, test_config) == 3  # hardcore
+    assert renderer._calculate_stars(32, test_config) == 6  # insane
+    assert renderer._calculate_stars(27, test_config) == 5  # great
+    assert renderer._calculate_stars(22, test_config) == 4  # very good
+    assert renderer._calculate_stars(18, test_config) == 3  # good
+    assert renderer._calculate_stars(16, test_config) == 2  # ok
+    assert renderer._calculate_stars(13, test_config) == 1  # light
+    assert renderer._calculate_stars(10, test_config) == 0  # below
 
 
 def test_stars_html():
@@ -42,10 +84,49 @@ def test_stars_html():
 
 def test_render_html(output_dir):
     """Test HTML report generation."""
+    from windforecast.schemas import WindConfig
+
+    # Create test config
+    test_config = WindConfig.model_validate(
+        {
+            "spots": [
+                {
+                    "name": "Test Spot",
+                    "lat": 0.0,
+                    "lon": 0.0,
+                    "dir_sector": {"start": 0, "end": 360, "wrap": False},
+                }
+            ],
+            "forecast": {
+                "model": "test",
+                "hourly_vars": "wind_speed_10m",
+                "wave_vars": "wave_height",
+                "forecast_hours_hourly": 48,
+                "forecast_min15": 24,
+            },
+            "time_window": {"day_start": 6, "day_end": 20},
+            "conditions": {
+                "bands": [
+                    ["too much", 40],
+                    ["hardcore", 35],
+                    ["insane", 30],
+                    ["great", 25],
+                    ["very good", 20],
+                    ["good", 17],
+                    ["ok", 15],
+                    ["light", 12],
+                    ["below", 0],
+                ],
+                "rain_limit": 0.5,
+            },
+        }
+    )
+
     renderer = ReportRenderer()
     test_data = {
         "generated_at": "2024-03-14T12:00:00Z",
         "model_updates": {"arome_france_hd": {"title": "AROME HD", "run": "2024-03-14T12:00:00Z"}},
+        "config": test_config,  # Add the config to the test data
         "spots": [
             {
                 "spot": "Test Spot",
@@ -81,10 +162,49 @@ def test_render_html(output_dir):
 
 def test_render_html_no_kiteable(output_dir):
     """Test HTML rendering with no kiteable conditions."""
+    from windforecast.schemas import WindConfig
+
+    # Create test config
+    test_config = WindConfig.model_validate(
+        {
+            "spots": [
+                {
+                    "name": "Test Spot",
+                    "lat": 0.0,
+                    "lon": 0.0,
+                    "dir_sector": {"start": 0, "end": 360, "wrap": False},
+                }
+            ],
+            "forecast": {
+                "model": "test",
+                "hourly_vars": "wind_speed_10m",
+                "wave_vars": "wave_height",
+                "forecast_hours_hourly": 48,
+                "forecast_min15": 24,
+            },
+            "time_window": {"day_start": 6, "day_end": 20},
+            "conditions": {
+                "bands": [
+                    ["too much", 40],
+                    ["hardcore", 35],
+                    ["insane", 30],
+                    ["great", 25],
+                    ["very good", 20],
+                    ["good", 17],
+                    ["ok", 15],
+                    ["light", 12],
+                    ["below", 0],
+                ],
+                "rain_limit": 0.5,
+            },
+        }
+    )
+
     renderer = ReportRenderer()
     test_data = {
         "generated_at": "2024-03-14T12:00:00Z",
         "model_updates": {},
+        "config": test_config,  # Add the config to the test data
         "spots": [
             {
                 "spot": "Test Spot",
