@@ -61,5 +61,5 @@ jobs:
             exit 0
           fi
           git commit -m "chore: Update forecast report $(date +%Y-%m-%d_%H:%M)"
-          # Force push and overwrite remote branch completely
-          git push origin +reports
+          # Force push to overwrite remote branch completely
+          git push --force-with-lease origin reports
