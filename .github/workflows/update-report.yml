@@ -38,10 +38,11 @@ jobs:
 
       - name: Create reports branch from main
         run: |
-          # Fetch main branch
-          git fetch origin main:main
-          # Create new reports branch from main, overwriting if it exists
-          git checkout -B reports main
+          # Reset to main branch content
+          git fetch origin main
+          git reset --hard origin/main
+          # Create new reports branch, overwriting if it exists
+          git checkout -B reports
 
       - name: Generate report
         run: |
