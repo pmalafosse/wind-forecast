@@ -1,0 +1,63 @@
+name: Update Forecast Report
+
+on:
+  schedule:
+    - cron: '0 * * * *'  # Run every hour
+  workflow_dispatch:  # Allow manual trigger
+
+jobs:
+  update-report:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all history for all branches
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.8'
+          cache: 'pip'
+
+      - name: Install Chrome
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y chromium-browser
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+
+      - name: Configure Git
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+
+      - name: Create and switch to reports branch
+        run: |
+          # Ensure we are on the existing reports branch
+          git fetch origin reports:reports || true
+          git checkout reports
+          # Merge latest main into reports to ensure assets are up-to-date
+          git fetch origin main:main || true
+          git merge --no-edit main || true
+
+      - name: Generate report
+        run: |
+          mkdir -p reports
+          windforecast --summary
+          cp out/report.html reports/latest.html
+          cp out/report.html "reports/$(date +%Y-%m-%d_%H-%M).html"
+
+      - name: Commit and push changes
+        run: |
+          git add reports/latest.html reports/*.html || git add reports/
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+            exit 0
+          fi
+          git commit -m "chore: Update forecast report $(date +%Y-%m-%d_%H:%M)"
+          git push origin reports
