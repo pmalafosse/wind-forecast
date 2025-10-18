@@ -1,0 +1,1516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wind Forecast Report</title>
+    <style>
+        /* High DPI Optimizations */
+        html {
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            text-rendering: optimizeLegibility;
+        }
+    </style>
+    <style>
+        @media print {
+            body {
+                margin: 0;
+                padding: 0;
+                background: white !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+            .day-section {
+                page-break-before: always;
+                margin-bottom: 30px;
+                background: white;
+                padding: 20px;
+            }
+            .day-section:first-child {
+                page-break-before: avoid;
+            }
+            .table-container {
+                overflow: visible !important;
+                box-shadow: none !important;
+                width: auto !important;
+                min-width: max-content !important;
+            }
+            .forecast-table {
+                width: 100% !important;
+                transform: none !important;
+            }
+            td, th {
+                min-width: 84px !important;
+            }
+            td:first-child, th:first-child {
+                max-width: 80px !important;
+                min-width: 60px !important;
+            }
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            line-height: 1.5;
+            margin: 0;
+            padding: 20px;
+            background: #f8f9fa;
+        }
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 30px;
+        }
+        .day-section {
+            margin-bottom: 30px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            padding: 20px;
+        }
+        .day-section h2 {
+            margin: 0 0 20px 0;
+            color: #2c3e50;
+            font-size: 1.4em;
+        }
+        .table-container {
+            overflow-x: auto;
+            margin: 0 -20px;
+            padding: 0 20px;
+        }
+        table.forecast-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            margin: 0;
+        }
+        th, td {
+            padding: 8px;
+            text-align: center;
+            min-width: 84px;
+            border: 1px solid #dee2e6;
+        }
+        th:first-child, td:first-child {
+            max-width: 80px;
+            min-width: 60px !important;
+        }
+        th:first-child {
+            font-weight: bold;
+        }
+        th {
+            background-color: #34495e;
+            color: white;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            white-space: nowrap;
+            font-size: 0.95em;
+        }
+        td {
+            vertical-align: top;
+        }
+                .spotcol {
+            position: sticky;
+            left: 0;
+            background: rgba(255, 255, 255, 0.4);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            z-index: 5;
+            text-align: left;
+            font-weight: 500;
+            max-width: 80px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            padding-right: 8px;
+        }
+        .wind {
+            font-size: 0.95em;
+            font-weight: 600;
+        }
+        .dir {
+            font-size: 0.8em;
+        }
+        .wave, .rain {
+            font-size: 0.75em;
+            margin-top: 1px;
+        }
+        .timestamp {
+            color: #6c757d;
+            font-size: 0.9em;
+            text-align: center;
+            margin-top: 20px;
+        }
+        .model-updates {
+            margin-top: 40px;
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .model-updates h3 {
+            color: #2c3e50;
+            margin: 0 0 15px 0;
+            font-size: 1.2em;
+        }
+        .daily-summary {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin: 0 0 20px 0;
+            padding: 20px;
+        }
+        .daily-summary h2 {
+            color: #2c3e50;
+            margin: 0 0 15px 0;
+            font-size: 1.4em;
+        }
+        .daily-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 20px;
+            margin: 0 -10px;
+        }
+        .day-summary {
+            padding: 0 10px;
+        }
+        .daily-summary h3 {
+            color: #34495e;
+            margin: 0 0 10px 0;
+            font-size: 1.2em;
+            padding-bottom: 5px;
+            border-bottom: 2px solid #e9ecef;
+        }
+        .daily-summary ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .daily-summary li {
+            margin: 10px 0;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 4px;
+        }
+        .daily-summary .stats {
+            color: #666;
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
+        .daily-summary .stars {
+            display: inline;
+        }
+        .model-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #dee2e6;
+        }
+        .model-info:last-child {
+            border-bottom: none;
+        }
+        .model-name {
+            font-weight: 500;
+            color: #2c3e50;
+        }
+        .model-run {
+            color: #6c757d;
+            font-family: monospace;
+        }
+        /* Cell styles */
+        .kiteable {
+            background-color: #f1f8ff;
+        }
+        .not-kiteable {
+            background-color: #f8f9fa;
+            color: #6c757d;
+        }
+        .no {
+            background-color: #f8f9fa;
+            color: #6c757d;
+        }
+        .stars {
+            color: #f1c40f;
+            margin-top: 2px;
+            font-size: 0.95em;
+            letter-spacing: 0.5px;
+        }
+        .day-start {
+            border-left: 2px solid #2c3e50 !important;
+        }
+        th.day-start {
+            border-top: 2px solid #2c3e50 !important;
+        }
+    </style>
+</head>
+<body>
+    <h1>Wind Forecast Report</h1>
+    <div class="daily-summary">
+            <h2>Daily Summary</h2>
+            <div class="daily-grid"><div class="day-summary">
+                    <h3>Sunday, 19 October</h3>
+                    <ul><li>
+                    <strong>Malgrat</strong>: 9 kiteable hours (12:00-20:00)
+                    <div class="stats">
+                        Avg wind: 17.6kt, Max gust: 29.5kt
+                        <div class="stars">★★★★</div>
+                    </div>
+                </li><li>
+                    <strong>Palamos</strong>: 9 kiteable hours (12:00-20:00)
+                    <div class="stats">
+                        Avg wind: 19.2kt, Max gust: 32.3kt
+                        <div class="stars">★★★★</div>
+                    </div>
+                </li><li>
+                    <strong>Rubina</strong>: 8 kiteable hours (13:00-20:00)
+                    <div class="stats">
+                        Avg wind: 16.3kt, Max gust: 27.4kt
+                        <div class="stars">★★★</div>
+                    </div>
+                </li><li>
+                    <strong>Castelldefels</strong>: 6 kiteable hours (15:00-20:00)
+                    <div class="stats">
+                        Avg wind: 14.2kt, Max gust: 25.5kt
+                        <div class="stars">★</div>
+                    </div>
+                </li><li>
+                    <strong>Cubelles</strong>: 2 kiteable hours (15:00-20:00)
+                    <div class="stats">
+                        Avg wind: 13.0kt, Max gust: 20.8kt
+                        <div class="stars">★</div>
+                    </div>
+                </li><li>
+                    <strong>Trabucador</strong>: 6 kiteable hours (15:00-20:00)
+                    <div class="stats">
+                        Avg wind: 14.5kt, Max gust: 20.2kt
+                        <div class="stars">★★</div>
+                    </div>
+                </li><li>
+                    <strong>Bogatell</strong>: 1 kiteable hours (18:00-18:00)
+                    <div class="stats">
+                        Avg wind: 12.1kt, Max gust: 21.2kt
+                        <div class="stars">★</div>
+                    </div>
+                </li></ul>
+                </div><div class="day-summary">
+                    <h3>Monday, 20 October</h3>
+                    <ul><li>
+                    <strong>Castelldefels</strong>: 6 kiteable hours (06:00-11:00)
+                    <div class="stats">
+                        Avg wind: 14.3kt, Max gust: 25.5kt
+                        <div class="stars">★★</div>
+                    </div>
+                </li><li>
+                    <strong>Malgrat</strong>: 9 kiteable hours (06:00-16:00)
+                    <div class="stats">
+                        Avg wind: 18.2kt, Max gust: 31.1kt
+                        <div class="stars">★★★★</div>
+                    </div>
+                </li><li>
+                    <strong>Palamos</strong>: 8 kiteable hours (06:00-16:00)
+                    <div class="stats">
+                        Avg wind: 17.4kt, Max gust: 33.4kt
+                        <div class="stars">★★★★</div>
+                    </div>
+                </li><li>
+                    <strong>Cubelles</strong>: 2 kiteable hours (06:00-08:00)
+                    <div class="stats">
+                        Avg wind: 12.5kt, Max gust: 20.8kt
+                        <div class="stars">★</div>
+                    </div>
+                </li><li>
+                    <strong>La Nautique</strong>: 8 kiteable hours (12:00-19:00)
+                    <div class="stats">
+                        Avg wind: 14.9kt, Max gust: 27.8kt
+                        <div class="stars">★★★</div>
+                    </div>
+                </li><li>
+                    <strong>Rubina</strong>: 3 kiteable hours (14:00-16:00)
+                    <div class="stats">
+                        Avg wind: 14.0kt, Max gust: 25.5kt
+                        <div class="stars">★★</div>
+                    </div>
+                </li><li>
+                    <strong>Sant Pere Pescador</strong>: 1 kiteable hours (15:00-15:00)
+                    <div class="stats">
+                        Avg wind: 12.3kt, Max gust: 20.8kt
+                        <div class="stars">★</div>
+                    </div>
+                </li><li>
+                    <strong>Parc des Dosses</strong>: 2 kiteable hours (15:00-16:00)
+                    <div class="stats">
+                        Avg wind: 14.1kt, Max gust: 18.5kt
+                        <div class="stars">★</div>
+                    </div>
+                </li><li>
+                    <strong>Base Militaire</strong>: 1 kiteable hours (15:00-15:00)
+                    <div class="stats">
+                        Avg wind: 12.1kt, Max gust: 15.7kt
+                        <div class="stars">★</div>
+                    </div>
+                </li></ul>
+                </div></div>
+        </div>
+<div class="day-section">
+                        <h2>Sunday, 19 October</h2>
+                        <div class="table-container">
+                            <table class="forecast-table">
+                                <tr><th>Spot</th><th>12:00</th><th>13:00</th><th>14:00</th><th>15:00</th><th>16:00</th><th>17:00</th><th>18:00</th><th>19:00</th><th>20:00</th></tr><tr><td class='spotcol'><strong>Malgrat</strong></td><td class="kiteable">
+                                        <div class="wind">12.1/17.7kt</div>
+                                        <div class="dir">SW</div>
+                                        <div class="stars">★</div>
+                                        <div class="wave">🌊 0.2m</div>
+
+                                    </td><td class="kiteable">
+                                        <div class="wind">12.8/19.0kt</div>
+                                        <div class="dir">SW</div>
+                                        <div class="stars">★</div>
+                                        <div class="wave">🌊 0.2m</div>
+
+                                    </td><td class="kiteable">
+                                        <div class="wind">15.4/21.4kt</div>
+                                        <div class="dir">SW</div>
+                                        <div class="stars">★★</div>
+                                        <div class="wave">🌊 0.3m</div>
+
+                                    </td><td class="kiteable">
+                                        <div class="wind">19.8/27.6kt</div>
+                                        <div class="dir">SW</div>
+                                        <div class="stars">★★★</div>
+                                        <div class="wave">🌊 0.4m</div>
+
+                                    </td><td class="kiteable">
+                                        <div class="wind">19.8/29.0kt</div>
+                                        <div class="dir">SW</div>
+                                        <div class="stars">★★★</div>
+                                        <div class="wave">🌊 0.5m</div>
+
+                                    </td><td class="kiteable">
+                                        <div class="wind">19.8/29.5kt</div>
+                                        <div class="dir">SW</div>
+                                        <div class="stars">★★★</div>
+                                        <div class="wave">🌊 0.6m</div>
+
+                                    </td><td class="kiteable">
+                                        <div class="wind">20.0/28.4kt</div>
+                                        <div class="dir">SW</div>
+                                        <div class="stars">★★★★</div>
+                                        <div class="wave">🌊 0.6m</div>
+
+                                    </td><td class="kiteable">
+                                        <div class="wind">18.9/27.6kt</div>
+                                        <div class="dir">SW</div>
+                                        <div class="stars">★★★</div>
+                                        <div class="wave">🌊 0.7m</div>
+
+                                    </td><td class="kiteable">
+                                        <div class="wind">20.2/27.8kt</div>
+                                        <div class="dir">SW</div>
+                                        <div class="stars">★★★★</div>
+                                        <div class="wave">🌊 0.8m</div>
+
+                                    </td></tr><tr><td class='spotcol'><strong>Palamos</strong></td><td class="kiteable">
+                                        <div class="wind">15.6/24.3kt</div>
+                                        <div class="dir">SSW</div>
+                                        <div class="stars">★★</div>
+                                        <div class="wave">🌊 0.3m</div>
+
+                                    </td><td class="kiteable">
+                                        <div class="wind">17.3/26.8kt</div>
+                                        <div class="dir">SW</div>
+                                        <div class="stars">★★★</div>
+                                        <div class="wave">🌊 0.4m</div>
+
+                                    </td><td class="kiteable">
+                                        <div class="wind">18.7/29.0kt</div>
+                                        <div class="dir">SSW</div>
+                                        <div class="stars">★★★</div>
+                                        <div class="wave">🌊 0.4m</div>
+
+                                    </td><td class="kiteable">
+                                        <div class="wind">20.3/31.1kt</div>
+                                        <div class="dir">SW</div>
+                                        <div class="stars">★★★★</div>
+                                        <div class="wave">🌊 0.5m</div>
+
+                                    </td><td class="kiteable">
+                                        <div class="wind">20.4/31.5kt</div>
+                                        <div class="dir">SW</div>
+                                        <div class="stars">★★★★</div>
+                                        <div class="wave">🌊 0.6m</div>
+
+                                    </td><td class="kiteable">
+                                        <div class="wind">20.2/31.9kt</div>
+                                        <div class="dir">SW</div>
+                                        <div class="stars">★★★★</div>
+                                        <div class="wave">🌊 0.7m</div>
+
+                                    </td><td class="kiteable">
+                                        <div class="wind">20.7/32.3kt</div>
+                                        <div class="dir">SW</div>
+                                        <div class="stars">★★★★</div>
+                                        <div class="wave">🌊 0.7m</div>
+
+                                    </td><td class="kiteable">
+                                        <div class="wind">19.9/32.1kt</div>
+                                        <div class="dir">SW</div>
+                                        <div class="stars">★★★</div>
+                                        <div class="wave">🌊 0.8m</div>
+
+                                    </td><td class="kiteable">
+                                        <div class="wind">19.3/31.1kt</div>
+                                        <div class="dir">SW</div>
+                                        <div class="stars">★★★</div>
+                                        <div class="wave">🌊 0.9m</div>
+
+                                    </td></tr><tr><td class='spotcol'><strong>Rubina</strong></td><td class="not-kiteable">
+                                        <div class="wind">2.3/5.1kt</div>
+                                        <div class="dir">SSE</div>
+
+                                        <div class="wave">🌊 0.5m</div>
+
+                                    </td><td class="kiteable">
+                                        <div class="wind">14.7/23.1kt</div>
+                                        <div class="dir">SSW</div>
+                                        <div class="stars">★</div>
+                                        <div class="wave">🌊 0.6m</div>
+
+                                    </td><td class="kiteable">
+                                        <div class="wind">16.3/25.5kt</div>
+                                        <div class="dir">SSW</div>
+                                        <div class="stars">★★</div>
+                                        <div class="wave">🌊 0.7m</div>
+
+                                    </td><td class="kiteable">
+                                        <div class="wind">16.2/25.5kt</div>
+                                        <div class="dir">SSW</div>
+                                        <div class="stars">★★</div>
+                                        <div class="wave">🌊 0.7m</div>
+
+                                    </td><td class="kiteable">
+                                        <div class="wind">16.9/26.8kt</div>
+                                        <div class="dir">SSW</div>
+                                        <div class="stars">★★</div>
+                                        <div class="wave">🌊 0.8m</div>
+
+                                    </td><td class="kiteable">
+                                        <div class="wind">17.8/27.4kt</div>
+                                        <div class="dir">SSW</div>
+                                        <div class="stars">★★★</div>
+                                        <div class="wave">🌊 0.8m</div>
+
+                                    </td><td class="kiteable">
+                                        <div class="wind">17.5/27.0kt</div>
+                                        <div class="dir">SSW</div>
+                                        <div class="stars">★★★</div>
+                                        <div class="wave">🌊 0.8m</div>
+
+                                    </td><td class="kiteable">
+                                        <div class="wind">15.9/27.0kt</div>
+                                        <div class="dir">SSW</div>
+                                        <div class="stars">★★</div>
+                                        <div class="wave">🌊 0.9m</div>
+
+                                    </td><td class="kiteable">
+                                        <div class="wind">15.1/24.7kt</div>
+                                        <div class="dir">SSW</div>
+                                        <div class="stars">★★</div>
+                                        <div class="wave">🌊 0.9m</div>
+
+                                    </td></tr><tr><td class='spotcol'><strong>Castelldefels</strong></td><td class="not-kiteable">
+                                        <div class="wind">2.4/5.4kt</div>
+                                        <div class="dir">S</div>
+
+                                        <div class="wave">🌊 0.3m</div>
+
+                                    </td><td class="not-kiteable">
+                                        <div class="wind">3.7/7.8kt</div>
+                                        <div class="dir">SW</div>
+
+                                        <div class="wave">🌊 0.4m</div>
+
+                                    </td><td class="not-kiteable">
+                                        <div class="wind">11.3/20.0kt</div>
+                                        <div class="dir">SW</div>
+
+                                        <div class="wave">🌊 0.5m</div>
+                                        <div class="rain">🌧 0.4mm</div>
+                                    </td><td class="kiteable">
+                                        <div class="wind">13.9/25.5kt</div>
+                                        <div class="dir">SW</div>
+                                        <div class="stars">★</div>
+                                        <div class="wave">🌊 0.5m</div>
+
+                                    </td><td class="kiteable">
+                                        <div class="wind">14.2/23.7kt</div>
+                                        <div class="dir">SW</div>
+                                        <div class="stars">★</div>
+                                        <div class="wave">🌊 0.6m</div>
+
+                                    </td><td class="kiteable">
+                                        <div class="wind">13.7/22.9kt</div>
+                                        <div class="dir">SW</div>
+                                        <div class="stars">★</div>
+                                        <div class="wave">🌊 0.6m</div>
+
+                                    </td><td class="kiteable">
+                                        <div class="wind">14.5/23.5kt</div>
+                                        <div class="dir">SW</div>
+                                        <div class="stars">★</div>
+                                        <div class="wave">🌊 0.7m</div>
+
+                                    </td><td class="kiteable">
+                                        <div class="wind">14.7/23.5kt</div>
+                                        <div class="dir">SW</div>
+                                        <div class="stars">★</div>
+                                        <div class="wave">🌊 0.7m</div>
+
+                                    </td><td class="kiteable">
+                                        <div class="wind">14.3/24.1kt</div>
+                                        <div class="dir">SW</div>
+                                        <div class="stars">★</div>
+                                        <div class="wave">🌊 0.7m</div>
+
+                                    </td></tr><tr><td class='spotcol'><strong>Trabucador</strong></td><td class="not-kiteable">
+                                        <div class="wind">2.3/5.4kt</div>
+                                        <div class="dir">SSW</div>
+
+                                        <div class="wave">🌊 0.3m</div>
+
+                                    </td><td class="not-kiteable">
+                                        <div class="wind">4.6/8.0kt</div>
+                                        <div class="dir">SSW</div>
+
+                                        <div class="wave">🌊 0.4m</div>
+
+                                    </td><td class="not-kiteable">
+                                        <div class="wind">11.9/16.5kt</div>
+                                        <div class="dir">SSW</div>
+
+                                        <div class="wave">🌊 0.4m</div>
+
+                                    </td><td class="kiteable">
+                                        <div class="wind">13.7/18.5kt</div>
+                                        <div class="dir">SSW</div>
+                                        <div class="stars">★</div>
+                                        <div class="wave">🌊 0.5m</div>
+
+                                    </td><td class="kiteable">
+                                        <div class="wind">14.7/19.6kt</div>
+                                        <div class="dir">SSW</div>
+                                        <div class="stars">★</div>
+                                        <div class="wave">🌊 0.5m</div>
+
+                                    </td><td class="kiteable">
+                                        <div class="wind">14.3/19.8kt</div>
+                                        <div class="dir">SSW</div>
+                                        <div class="stars">★</div>
+                                        <div class="wave">🌊 0.6m</div>
+
+                                    </td><td class="kiteable">
+                                        <div class="wind">13.6/19.0kt</div>
+                                        <div class="dir">SSW</div>
+                                        <div class="stars">★</div>
+                                        <div class="wave">🌊 0.6m</div>
+
+                                    </td><td class="kiteable">
+                                        <div class="wind">15.0/19.8kt</div>
+                                        <div class="dir">SSW</div>
+                                        <div class="stars">★★</div>
+                                        <div class="wave">🌊 0.6m</div>
+
+                                    </td><td class="kiteable">
+                                        <div class="wind">15.5/20.2kt</div>
+                                        <div class="dir">SSW</div>
+                                        <div class="stars">★★</div>
+                                        <div class="wave">🌊 0.7m</div>
+
+                                    </td></tr><tr><td class='spotcol'><strong>Cubelles</strong></td><td class="not-kiteable">
+                                        <div class="wind">2.8/6.2kt</div>
+                                        <div class="dir">SSE</div>
+
+                                        <div class="wave">🌊 0.3m</div>
+
+                                    </td><td class="not-kiteable">
+                                        <div class="wind">3.0/6.6kt</div>
+                                        <div class="dir">SW</div>
+
+                                        <div class="wave">🌊 0.3m</div>
+
+                                    </td><td class="not-kiteable">
+                                        <div class="wind">8.0/13.6kt</div>
+                                        <div class="dir">SW</div>
+
+                                        <div class="wave">🌊 0.3m</div>
+
+                                    </td><td class="kiteable">
+                                        <div class="wind">13.5/20.8kt</div>
+                                        <div class="dir">SW</div>
+                                        <div class="stars">★</div>
+                                        <div class="wave">🌊 0.4m</div>
+
+                                    </td><td class="not-kiteable">
+                                        <div class="wind">10.2/20.6kt</div>
+                                        <div class="dir">WSW</div>
+
+                                        <div class="wave">🌊 0.4m</div>
+
+                                    </td><td class="not-kiteable">
+                                        <div class="wind">11.6/18.7kt</div>
+                                        <div class="dir">SW</div>
+
+                                        <div class="wave">🌊 0.5m</div>
+                                        <div class="rain">🌧 0.1mm</div>
+                                    </td><td class="not-kiteable">
+                                        <div class="wind">11.6/18.5kt</div>
+                                        <div class="dir">SW</div>
+
+                                        <div class="wave">🌊 0.5m</div>
+
+                                    </td><td class="not-kiteable">
+                                        <div class="wind">11.3/18.5kt</div>
+                                        <div class="dir">SW</div>
+
+                                        <div class="wave">🌊 0.6m</div>
+
+                                    </td><td class="kiteable">
+                                        <div class="wind">12.5/19.0kt</div>
+                                        <div class="dir">SW</div>
+                                        <div class="stars">★</div>
+                                        <div class="wave">🌊 0.6m</div>
+
+                                    </td></tr><tr><td class='spotcol'><strong>Bogatell</strong></td><td class="not-kiteable">
+                                        <div class="wind">4.2/8.9kt</div>
+                                        <div class="dir">SSW</div>
+
+                                        <div class="wave">🌊 0.3m</div>
+
+                                    </td><td class="not-kiteable">
+                                        <div class="wind">7.6/13.4kt</div>
+                                        <div class="dir">SSW</div>
+
+                                        <div class="wave">🌊 0.4m</div>
+
+                                    </td><td class="not-kiteable">
+                                        <div class="wind">10.8/19.6kt</div>
+                                        <div class="dir">SW</div>
+
+                                        <div class="wave">🌊 0.4m</div>
+
+                                    </td><td class="not-kiteable">
+                                        <div class="wind">10.2/20.8kt</div>
+                                        <div class="dir">SW</div>
+
+                                        <div class="wave">🌊 0.5m</div>
+
+                                    </td><td class="not-kiteable">
+                                        <div class="wind">10.1/22.2kt</div>
+                                        <div class="dir">SW</div>
+
+                                        <div class="wave">🌊 0.6m</div>
+
+                                    </td><td class="not-kiteable">
+                                        <div class="wind">11.5/20.6kt</div>
+                                        <div class="dir">SW</div>
+
+                                        <div class="wave">🌊 0.7m</div>
+
+                                    </td><td class="kiteable">
+                                        <div class="wind">12.1/21.2kt</div>
+                                        <div class="dir">SW</div>
+                                        <div class="stars">★</div>
+                                        <div class="wave">🌊 0.7m</div>
+
+                                    </td><td class="not-kiteable">
+                                        <div class="wind">10.5/21.2kt</div>
+                                        <div class="dir">SW</div>
+
+                                        <div class="wave">🌊 0.7m</div>
+
+                                    </td><td class="not-kiteable">
+                                        <div class="wind">10.0/18.9kt</div>
+                                        <div class="dir">SW</div>
+
+                                        <div class="wave">🌊 0.8m</div>
+
+                                    </td></tr>
+                            </table>
+                        </div>
+                    </div>
+<div class="day-section">
+                        <h2>Monday, 20 October</h2>
+                        <div class="table-container">
+                            <table class="forecast-table">
+                                <tr><th>Spot</th><th>06:00</th><th>07:00</th><th>08:00</th><th>09:00</th><th>10:00</th><th>11:00</th><th>12:00</th><th>13:00</th><th>14:00</th><th>15:00</th><th>16:00</th><th>17:00</th><th>18:00</th><th>19:00</th></tr><tr><td class='spotcol'><strong>Malgrat</strong></td><td class="kiteable">
+                                        <div class="wind">20.8/29.0kt</div>
+                                        <div class="dir">SW</div>
+                                        <div class="stars">★★★★</div>
+                                        <div class="wave">🌊 1.0m</div>
+                                        <div class="rain">🌧 0.4mm</div>
+                                    </td><td class="kiteable">
+                                        <div class="wind">20.4/29.2kt</div>
+                                        <div class="dir">SW</div>
+                                        <div class="stars">★★★★</div>
+                                        <div class="wave">🌊 1.0m</div>
+
+                                    </td><td class="kiteable">
+                                        <div class="wind">21.0/29.5kt</div>
+                                        <div class="dir">SW</div>
+                                        <div class="stars">★★★★</div>
+                                        <div class="wave">🌊 1.0m</div>
+
+                                    </td><td class="kiteable">
+                                        <div class="wind">22.0/30.3kt</div>
+                                        <div class="dir">SW</div>
+                                        <div class="stars">★★★★</div>
+                                        <div class="wave">🌊 1.1m</div>
+
+                                    </td><td class="kiteable">
+                                        <div class="wind">21.7/31.1kt</div>
+                                        <div class="dir">SW</div>
+                                        <div class="stars">★★★★</div>
+                                        <div class="wave">🌊 1.1m</div>
+                                        <div class="rain">🌧 0.2mm</div>
+                                    </td><td class="not-kiteable">
+                                        <div class="wind">13.7/32.1kt</div>
+                                        <div class="dir">WSW</div>
+
+                                        <div class="wave">🌊 1.2m</div>
+                                        <div class="rain">🌧 4.6mm</div>
+                                    </td><td class="not-kiteable">
+                                        <div class="wind">11.6/22.4kt</div>
+                                        <div class="dir">WSW</div>
+
+                                        <div class="wave">🌊 1.2m</div>
+                                        <div class="rain">🌧 1.1mm</div>
+                                    </td><td class="kiteable">
+                                        <div class="wind">13.5/20.0kt</div>
+                                        <div class="dir">SW</div>
+                                        <div class="stars">★</div>
+                                        <div class="wave">🌊 1.2m</div>
+
+                                    </td><td class="kiteable">
+                                        <div class="wind">14.7/20.6kt</div>
+                                        <div class="dir">SW</div>
+                                        <div class="stars">★</div>
+                                        <div class="wave">🌊 1.2m</div>
+
+                                    </td><td class="kiteable">
+                                        <div class="wind">15.0/21.8kt</div>
+                                        <div class="dir">SW</div>
+                                        <div class="stars">★★</div>
+                                        <div class="wave">🌊 1.1m</div>
+
+                                    </td><td class="kiteable">
+                                        <div class="wind">14.9/22.2kt</div>
+                                        <div class="dir">SW</div>
+                                        <div class="stars">★</div>
+                                        <div class="wave">🌊 1.1m</div>
+
+                                    </td><td class="not-kiteable">
+                                        <div class="wind">11.8/21.6kt</div>
+                                        <div class="dir">SW</div>
+
+                                        <div class="wave">🌊 1.0m</div>
+
+                                    </td><td class="not-kiteable">
+                                        <div class="wind">10.9/17.1kt</div>
+                                        <div class="dir">SW</div>
+
+                                        <div class="wave">🌊 1.0m</div>
+
+                                    </td><td class="not-kiteable">
+                                        <div class="wind">6.5/14.8kt</div>
+                                        <div class="dir">SW</div>
+
+                                        <div class="wave">🌊 0.9m</div>
+
+                                    </td></tr><tr><td class='spotcol'><strong>Palamos</strong></td><td class="kiteable">
+                                        <div class="wind">17.2/28.8kt</div>
+                                        <div class="dir">SW</div>
+                                        <div class="stars">★★★</div>
+                                        <div class="wave">🌊 1.2m</div>
+
+                                    </td><td class="kiteable">
+                                        <div class="wind">19.6/31.7kt</div>
+                                        <div class="dir">SW</div>
+                                        <div class="stars">★★★</div>
+                                        <div class="wave">🌊 1.2m</div>
+
+                                    </td><td class="kiteable">
+                                        <div class="wind">20.0/31.3kt</div>
+                                        <div class="dir">SW</div>
+                                        <div class="stars">★★★★</div>
+                                        <div class="wave">🌊 1.2m</div>
+
+                                    </td><td class="kiteable">
+                                        <div class="wind">17.9/33.4kt</div>
+                                        <div class="dir">SW</div>
+                                        <div class="stars">★★★</div>
+                                        <div class="wave">🌊 1.2m</div>
+                                        <div class="rain">🌧 0.1mm</div>
+                                    </td><td class="not-kiteable">
+                                        <div class="wind">13.9/31.9kt</div>
+                                        <div class="dir">WSW</div>
+
+                                        <div class="wave">🌊 1.2m</div>
+                                        <div class="rain">🌧 3.4mm</div>
+                                    </td><td class="not-kiteable">
+                                        <div class="wind">16.6/28.6kt</div>
+                                        <div class="dir">SW</div>
+
+                                        <div class="wave">🌊 1.3m</div>
+                                        <div class="rain">🌧 1.8mm</div>
+                                    </td><td class="not-kiteable">
+                                        <div class="wind">10.9/25.5kt</div>
+                                        <div class="dir">SW</div>
+
+                                        <div class="wave">🌊 1.3m</div>
+                                        <div class="rain">🌧 1.3mm</div>
+                                    </td><td class="kiteable">
+                                        <div class="wind">15.9/27.2kt</div>
+                                        <div class="dir">SW</div>
+                                        <div class="stars">★★</div>
+                                        <div class="wave">🌊 1.3m</div>
+
+                                    </td><td class="kiteable">
+                                        <div class="wind">16.9/26.8kt</div>
+                                        <div class="dir">SSW</div>
+                                        <div class="stars">★★</div>
+                                        <div class="wave">🌊 1.3m</div>
+
+                                    </td><td class="kiteable">
+                                        <div class="wind">16.0/26.8kt</div>
+                                        <div class="dir">SSW</div>
+                                        <div class="stars">★★</div>
+                                        <div class="wave">🌊 1.2m</div>
+
+                                    </td><td class="kiteable">
+                                        <div class="wind">15.4/24.9kt</div>
+                                        <div class="dir">SW</div>
+                                        <div class="stars">★★</div>
+                                        <div class="wave">🌊 1.2m</div>
+
+                                    </td><td class="not-kiteable">
+                                        <div class="wind">9.9/24.1kt</div>
+                                        <div class="dir">SW</div>
+
+                                        <div class="wave">🌊 1.1m</div>
+
+                                    </td><td class="not-kiteable">
+                                        <div class="wind">8.9/20.6kt</div>
+                                        <div class="dir">NNE</div>
+
+                                        <div class="wave">🌊 1.0m</div>
+                                        <div class="rain">🌧 0.1mm</div>
+                                    </td><td class="not-kiteable">
+                                        <div class="wind">7.1/14.6kt</div>
+                                        <div class="dir">NE</div>
+
+                                        <div class="wave">🌊 1.0m</div>
+
+                                    </td></tr><tr><td class='spotcol'><strong>La Nautique</strong></td><td class="not-kiteable">
+                                        <div class="wind">4.1/6.8kt</div>
+                                        <div class="dir">NNW</div>
+
+                                        <div class="wave">🌊 0.6m</div>
+
+                                    </td><td class="not-kiteable">
+                                        <div class="wind">4.3/7.4kt</div>
+                                        <div class="dir">N</div>
+
+                                        <div class="wave">🌊 0.6m</div>
+
+                                    </td><td class="not-kiteable">
+                                        <div class="wind">4.7/6.6kt</div>
+                                        <div class="dir">NNW</div>
+
+                                        <div class="wave">🌊 0.5m</div>
+
+                                    </td><td class="not-kiteable">
+                                        <div class="wind">4.8/6.6kt</div>
+                                        <div class="dir">NNW</div>
+
+                                        <div class="wave">🌊 0.5m</div>
+
+                                    </td><td class="not-kiteable">
+                                        <div class="wind">7.3/10.9kt</div>
+                                        <div class="dir">NW</div>
+
+                                        <div class="wave">🌊 0.5m</div>
+
+                                    </td><td class="not-kiteable">
+                                        <div class="wind">10.5/15.9kt</div>
+                                        <div class="dir">WNW</div>
+
+                                        <div class="wave">🌊 0.5m</div>
+
+                                    </td><td class="kiteable">
+                                        <div class="wind">12.3/20.2kt</div>
+                                        <div class="dir">W</div>
+                                        <div class="stars">★</div>
+                                        <div class="wave">🌊 0.5m</div>
+
+                                    </td><td class="kiteable">
+                                        <div class="wind">14.9/24.1kt</div>
+                                        <div class="dir">WNW</div>
+                                        <div class="stars">★</div>
+                                        <div class="wave">🌊 0.5m</div>
+
+                                    </td><td class="kiteable">
+                                        <div class="wind">17.7/27.4kt</div>
+                                        <div class="dir">WNW</div>
+                                        <div class="stars">★★★</div>
+                                        <div class="wave">🌊 0.4m</div>
+
+                                    </td><td class="kiteable">
+                                        <div class="wind">15.4/27.8kt</div>
+                                        <div class="dir">WNW</div>
+                                        <div class="stars">★★</div>
+                                        <div class="wave">🌊 0.4m</div>
+
+                                    </td><td class="kiteable">
+                                        <div class="wind">16.1/25.1kt</div>
+                                        <div class="dir">WNW</div>
+                                        <div class="stars">★★</div>
+                                        <div class="wave">🌊 0.4m</div>
+
+                                    </td><td class="kiteable">
+                                        <div class="wind">14.7/24.9kt</div>
+                                        <div class="dir">WNW</div>
+                                        <div class="stars">★</div>
+                                        <div class="wave">🌊 0.4m</div>
+
+                                    </td><td class="kiteable">
+                                        <div class="wind">15.7/26.2kt</div>
+                                        <div class="dir">WNW</div>
+                                        <div class="stars">★★</div>
+                                        <div class="wave">🌊 0.4m</div>
+
+                                    </td><td class="kiteable">
+                                        <div class="wind">12.6/23.9kt</div>
+                                        <div class="dir">WNW</div>
+                                        <div class="stars">★</div>
+                                        <div class="wave">🌊 0.4m</div>
+
+                                    </td></tr><tr><td class='spotcol'><strong>Castelldefels</strong></td><td class="kiteable">
+                                        <div class="wind">14.4/23.7kt</div>
+                                        <div class="dir">SW</div>
+                                        <div class="stars">★</div>
+                                        <div class="wave">🌊 1.2m</div>
+
+                                    </td><td class="kiteable">
+                                        <div class="wind">14.8/23.9kt</div>
+                                        <div class="dir">SW</div>
+                                        <div class="stars">★</div>
+                                        <div class="wave">🌊 1.2m</div>
+
+                                    </td><td class="kiteable">
+                                        <div class="wind">14.7/23.9kt</div>
+                                        <div class="dir">SW</div>
+                                        <div class="stars">★</div>
+                                        <div class="wave">🌊 1.3m</div>
+
+                                    </td><td class="kiteable">
+                                        <div class="wind">15.5/25.3kt</div>
+                                        <div class="dir">SW</div>
+                                        <div class="stars">★★</div>
+                                        <div class="wave">🌊 1.2m</div>
+
+                                    </td><td class="kiteable">
+                                        <div class="wind">14.4/25.5kt</div>
+                                        <div class="dir">WSW</div>
+                                        <div class="stars">★</div>
+                                        <div class="wave">🌊 1.2m</div>
+
+                                    </td><td class="kiteable">
+                                        <div class="wind">12.2/25.3kt</div>
+                                        <div class="dir">WSW</div>
+                                        <div class="stars">★</div>
+                                        <div class="wave">🌊 1.2m</div>
+
+                                    </td><td class="not-kiteable">
+                                        <div class="wind">11.3/20.6kt</div>
+                                        <div class="dir">WSW</div>
+
+                                        <div class="wave">🌊 1.1m</div>
+
+                                    </td><td class="not-kiteable">
+                                        <div class="wind">11.8/21.0kt</div>
+                                        <div class="dir">WSW</div>
+
+                                        <div class="wave">🌊 1.1m</div>
+
+                                    </td><td class="not-kiteable">
+                                        <div class="wind">11.5/19.8kt</div>
+                                        <div class="dir">SW</div>
+
+                                        <div class="wave">🌊 1.0m</div>
+
+                                    </td><td class="not-kiteable">
+                                        <div class="wind">10.9/19.0kt</div>
+                                        <div class="dir">SW</div>
+
+                                        <div class="wave">🌊 1.0m</div>
+
+                                    </td><td class="not-kiteable">
+                                        <div class="wind">9.1/18.1kt</div>
+                                        <div class="dir">SW</div>
+
+                                        <div class="wave">🌊 0.9m</div>
+
+                                    </td><td class="not-kiteable">
+                                        <div class="wind">8.5/15.4kt</div>
+                                        <div class="dir">SW</div>
+
+                                        <div class="wave">🌊 0.9m</div>
+
+                                    </td><td class="not-kiteable">
+                                        <div class="wind">6.8/14.0kt</div>
+                                        <div class="dir">SW</div>
+
+                                        <div class="wave">🌊 0.9m</div>
+
+                                    </td><td class="not-kiteable">
+                                        <div class="wind">5.7/11.5kt</div>
+                                        <div class="dir">WSW</div>
+
+                                        <div class="wave">🌊 0.8m</div>
+
+                                    </td></tr><tr><td class='spotcol'><strong>Rubina</strong></td><td class="not-kiteable">
+                                        <div class="wind">14.1/22.5kt</div>
+                                        <div class="dir">SSW</div>
+
+                                        <div class="wave">🌊 1.0m</div>
+
+                                    </td><td class="not-kiteable">
+                                        <div class="wind">12.7/22.7kt</div>
+                                        <div class="dir">SW</div>
+
+                                        <div class="wave">🌊 1.0m</div>
+
+                                    </td><td class="not-kiteable">
+                                        <div class="wind">14.1/22.7kt</div>
+                                        <div class="dir">SSW</div>
+
+                                        <div class="wave">🌊 1.0m</div>
+
+                                    </td><td class="not-kiteable">
+                                        <div class="wind">13.4/23.3kt</div>
+                                        <div class="dir">SW</div>
+
+                                        <div class="wave">🌊 1.0m</div>
+
+                                    </td><td class="not-kiteable">
+                                        <div class="wind">9.3/21.6kt</div>
+                                        <div class="dir">SSW</div>
+
+                                        <div class="wave">🌊 1.0m</div>
+                                        <div class="rain">🌧 0.4mm</div>
+                                    </td><td class="not-kiteable">
+                                        <div class="wind">8.9/16.1kt</div>
+                                        <div class="dir">SSW</div>
+
+                                        <div class="wave">🌊 1.0m</div>
+                                        <div class="rain">🌧 0.3mm</div>
+                                    </td><td class="not-kiteable">
+                                        <div class="wind">7.6/15.0kt</div>
+                                        <div class="dir">SSW</div>
+
+                                        <div class="wave">🌊 0.9m</div>
+
+                                    </td><td class="not-kiteable">
+                                        <div class="wind">5.0/12.6kt</div>
+                                        <div class="dir">SSE</div>
+
+                                        <div class="wave">🌊 0.9m</div>
+
+                                    </td><td class="kiteable">
+                                        <div class="wind">12.3/19.8kt</div>
+                                        <div class="dir">NE</div>
+                                        <div class="stars">★</div>
+                                        <div class="wave">🌊 0.9m</div>
+
+                                    </td><td class="kiteable">
+                                        <div class="wind">15.4/24.9kt</div>
+                                        <div class="dir">NE</div>
+                                        <div class="stars">★★</div>
+                                        <div class="wave">🌊 0.8m</div>
+
+                                    </td><td class="kiteable">
+                                        <div class="wind">14.2/25.5kt</div>
+                                        <div class="dir">NE</div>
+                                        <div class="stars">★</div>
+                                        <div class="wave">🌊 0.8m</div>
+
+                                    </td><td class="not-kiteable">
+                                        <div class="wind">9.8/23.1kt</div>
+                                        <div class="dir">NE</div>
+
+                                        <div class="wave">🌊 0.8m</div>
+
+                                    </td><td class="not-kiteable">
+                                        <div class="wind">7.9/16.3kt</div>
+                                        <div class="dir">NNE</div>
+
+                                        <div class="wave">🌊 0.7m</div>
+
+                                    </td><td class="not-kiteable">
+                                        <div class="wind">6.7/15.2kt</div>
+                                        <div class="dir">NNE</div>
+
+                                        <div class="wave">🌊 0.7m</div>
+
+                                    </td></tr><tr><td class='spotcol'><strong>Cubelles</strong></td><td class="kiteable">
+                                        <div class="wind">12.6/20.8kt</div>
+                                        <div class="dir">SSW</div>
+                                        <div class="stars">★</div>
+                                        <div class="wave">🌊 1.0m</div>
+
+                                    </td><td class="not-kiteable">
+                                        <div class="wind">11.9/20.8kt</div>
+                                        <div class="dir">SW</div>
+
+                                        <div class="wave">🌊 1.0m</div>
+
+                                    </td><td class="kiteable">
+                                        <div class="wind">12.4/19.0kt</div>
+                                        <div class="dir">SW</div>
+                                        <div class="stars">★</div>
+                                        <div class="wave">🌊 1.0m</div>
+
+                                    </td><td class="not-kiteable">
+                                        <div class="wind">7.8/19.8kt</div>
+                                        <div class="dir">WSW</div>
+
+                                        <div class="wave">🌊 1.0m</div>
+
+                                    </td><td class="not-kiteable">
+                                        <div class="wind">4.3/12.1kt</div>
+                                        <div class="dir">W</div>
+
+                                        <div class="wave">🌊 1.0m</div>
+
+                                    </td><td class="not-kiteable">
+                                        <div class="wind">5.2/9.1kt</div>
+                                        <div class="dir">WSW</div>
+
+                                        <div class="wave">🌊 1.0m</div>
+
+                                    </td><td class="not-kiteable">
+                                        <div class="wind">7.3/12.6kt</div>
+                                        <div class="dir">WSW</div>
+
+                                        <div class="wave">🌊 1.0m</div>
+
+                                    </td><td class="not-kiteable">
+                                        <div class="wind">7.2/12.8kt</div>
+                                        <div class="dir">WSW</div>
+
+                                        <div class="wave">🌊 0.9m</div>
+
+                                    </td><td class="not-kiteable">
+                                        <div class="wind">7.0/13.0kt</div>
+                                        <div class="dir">SW</div>
+
+                                        <div class="wave">🌊 0.9m</div>
+
+                                    </td><td class="not-kiteable">
+                                        <div class="wind">6.3/12.2kt</div>
+                                        <div class="dir">SW</div>
+
+                                        <div class="wave">🌊 0.9m</div>
+
+                                    </td><td class="not-kiteable">
+                                        <div class="wind">6.4/11.7kt</div>
+                                        <div class="dir">SW</div>
+
+                                        <div class="wave">🌊 0.8m</div>
+
+                                    </td><td class="not-kiteable">
+                                        <div class="wind">4.6/11.1kt</div>
+                                        <div class="dir">WSW</div>
+
+                                        <div class="wave">🌊 0.8m</div>
+
+                                    </td><td class="not-kiteable">
+                                        <div class="wind">4.0/8.2kt</div>
+                                        <div class="dir">SW</div>
+
+                                        <div class="wave">🌊 0.8m</div>
+
+                                    </td><td class="not-kiteable">
+                                        <div class="wind">4.0/6.4kt</div>
+                                        <div class="dir">WSW</div>
+
+                                        <div class="wave">🌊 0.8m</div>
+
+                                    </td></tr><tr><td class='spotcol'><strong>Parc des Dosses</strong></td><td class="not-kiteable">
+                                        <div class="wind">5.1/6.8kt</div>
+                                        <div class="dir">NE</div>
+
+                                        <div class="wave">🌊 0.7m</div>
+
+                                    </td><td class="not-kiteable">
+                                        <div class="wind">6.9/8.7kt</div>
+                                        <div class="dir">N</div>
+
+                                        <div class="wave">🌊 0.6m</div>
+
+                                    </td><td class="not-kiteable">
+                                        <div class="wind">6.1/9.1kt</div>
+                                        <div class="dir">N</div>
+
+                                        <div class="wave">🌊 0.6m</div>
+
+                                    </td><td class="not-kiteable">
+                                        <div class="wind">5.1/7.8kt</div>
+                                        <div class="dir">N</div>
+
+                                        <div class="wave">🌊 0.6m</div>
+
+                                    </td><td class="not-kiteable">
+                                        <div class="wind">2.4/6.2kt</div>
+                                        <div class="dir">NNW</div>
+
+                                        <div class="wave">🌊 0.6m</div>
+
+                                    </td><td class="not-kiteable">
+                                        <div class="wind">9.0/10.7kt</div>
+                                        <div class="dir">NNW</div>
+
+                                        <div class="wave">🌊 0.6m</div>
+
+                                    </td><td class="not-kiteable">
+                                        <div class="wind">10.0/14.2kt</div>
+                                        <div class="dir">NNW</div>
+
+                                        <div class="wave">🌊 0.5m</div>
+
+                                    </td><td class="not-kiteable">
+                                        <div class="wind">8.2/12.6kt</div>
+                                        <div class="dir">NNW</div>
+
+                                        <div class="wave">🌊 0.5m</div>
+
+                                    </td><td class="not-kiteable">
+                                        <div class="wind">10.4/12.8kt</div>
+                                        <div class="dir">NW</div>
+
+                                        <div class="wave">🌊 0.5m</div>
+
+                                    </td><td class="kiteable">
+                                        <div class="wind">14.7/18.5kt</div>
+                                        <div class="dir">NW</div>
+                                        <div class="stars">★</div>
+                                        <div class="wave">🌊 0.5m</div>
+
+                                    </td><td class="kiteable">
+                                        <div class="wind">13.4/18.5kt</div>
+                                        <div class="dir">NW</div>
+                                        <div class="stars">★</div>
+                                        <div class="wave">🌊 0.4m</div>
+
+                                    </td><td class="not-kiteable">
+                                        <div class="wind">8.9/17.3kt</div>
+                                        <div class="dir">NW</div>
+
+                                        <div class="wave">🌊 0.4m</div>
+
+                                    </td><td class="not-kiteable">
+                                        <div class="wind">7.5/12.4kt</div>
+                                        <div class="dir">N</div>
+
+                                        <div class="wave">🌊 0.4m</div>
+
+                                    </td><td class="not-kiteable">
+                                        <div class="wind">7.2/11.9kt</div>
+                                        <div class="dir">NNE</div>
+
+                                        <div class="wave">🌊 0.4m</div>
+
+                                    </td></tr><tr><td class='spotcol'><strong>Sant Pere Pescador</strong></td><td class="not-kiteable">
+                                        <div class="wind">13.6/21.8kt</div>
+                                        <div class="dir">SSW</div>
+
+                                        <div class="wave">🌊 1.0m</div>
+
+                                    </td><td class="not-kiteable">
+                                        <div class="wind">12.0/21.2kt</div>
+                                        <div class="dir">SSW</div>
+
+                                        <div class="wave">🌊 1.1m</div>
+
+                                    </td><td class="not-kiteable">
+                                        <div class="wind">12.9/20.6kt</div>
+                                        <div class="dir">SW</div>
+
+                                        <div class="wave">🌊 1.1m</div>
+
+                                    </td><td class="not-kiteable">
+                                        <div class="wind">12.2/20.0kt</div>
+                                        <div class="dir">SW</div>
+
+                                        <div class="wave">🌊 1.1m</div>
+
+                                    </td><td class="not-kiteable">
+                                        <div class="wind">10.0/20.0kt</div>
+                                        <div class="dir">SSW</div>
+
+                                        <div class="wave">🌊 1.1m</div>
+                                        <div class="rain">🌧 0.4mm</div>
+                                    </td><td class="not-kiteable">
+                                        <div class="wind">9.7/16.7kt</div>
+                                        <div class="dir">SW</div>
+
+                                        <div class="wave">🌊 1.0m</div>
+
+                                    </td><td class="not-kiteable">
+                                        <div class="wind">8.3/14.4kt</div>
+                                        <div class="dir">SSW</div>
+
+                                        <div class="wave">🌊 1.0m</div>
+
+                                    </td><td class="not-kiteable">
+                                        <div class="wind">6.2/12.6kt</div>
+                                        <div class="dir">SW</div>
+
+                                        <div class="wave">🌊 1.0m</div>
+
+                                    </td><td class="not-kiteable">
+                                        <div class="wind">6.1/12.8kt</div>
+                                        <div class="dir">WSW</div>
+
+                                        <div class="wave">🌊 1.0m</div>
+
+                                    </td><td class="kiteable">
+                                        <div class="wind">12.3/20.8kt</div>
+                                        <div class="dir">ENE</div>
+                                        <div class="stars">★</div>
+                                        <div class="wave">🌊 0.9m</div>
+
+                                    </td><td class="not-kiteable">
+                                        <div class="wind">11.4/18.5kt</div>
+                                        <div class="dir">NNE</div>
+
+                                        <div class="wave">🌊 0.9m</div>
+
+                                    </td><td class="not-kiteable">
+                                        <div class="wind">7.2/16.7kt</div>
+                                        <div class="dir">ENE</div>
+
+                                        <div class="wave">🌊 0.9m</div>
+
+                                    </td><td class="not-kiteable">
+                                        <div class="wind">7.7/10.7kt</div>
+                                        <div class="dir">NE</div>
+
+                                        <div class="wave">🌊 0.8m</div>
+
+                                    </td><td class="not-kiteable">
+                                        <div class="wind">7.3/11.1kt</div>
+                                        <div class="dir">NNE</div>
+
+                                        <div class="wave">🌊 0.8m</div>
+
+                                    </td></tr><tr><td class='spotcol'><strong>Base Militaire</strong></td><td class="not-kiteable">
+                                        <div class="wind">5.5/8.0kt</div>
+                                        <div class="dir">E</div>
+
+                                        <div class="wave">🌊 0.6m</div>
+
+                                    </td><td class="not-kiteable">
+                                        <div class="wind">5.0/8.2kt</div>
+                                        <div class="dir">NE</div>
+
+                                        <div class="wave">🌊 0.6m</div>
+
+                                    </td><td class="not-kiteable">
+                                        <div class="wind">4.4/7.8kt</div>
+                                        <div class="dir">NE</div>
+
+                                        <div class="wave">🌊 0.5m</div>
+
+                                    </td><td class="not-kiteable">
+                                        <div class="wind">3.5/6.6kt</div>
+                                        <div class="dir">NNW</div>
+
+                                        <div class="wave">🌊 0.5m</div>
+
+                                    </td><td class="not-kiteable">
+                                        <div class="wind">4.3/5.8kt</div>
+                                        <div class="dir">W</div>
+
+                                        <div class="wave">🌊 0.5m</div>
+
+                                    </td><td class="not-kiteable">
+                                        <div class="wind">8.0/11.7kt</div>
+                                        <div class="dir">NW</div>
+
+                                        <div class="wave">🌊 0.5m</div>
+
+                                    </td><td class="not-kiteable">
+                                        <div class="wind">5.5/13.4kt</div>
+                                        <div class="dir">N</div>
+
+                                        <div class="wave">🌊 0.5m</div>
+
+                                    </td><td class="not-kiteable">
+                                        <div class="wind">8.5/13.0kt</div>
+                                        <div class="dir">NW</div>
+
+                                        <div class="wave">🌊 0.5m</div>
+
+                                    </td><td class="not-kiteable">
+                                        <div class="wind">10.1/15.0kt</div>
+                                        <div class="dir">NW</div>
+
+                                        <div class="wave">🌊 0.4m</div>
+
+                                    </td><td class="kiteable">
+                                        <div class="wind">12.1/15.7kt</div>
+                                        <div class="dir">NW</div>
+                                        <div class="stars">★</div>
+                                        <div class="wave">🌊 0.4m</div>
+
+                                    </td><td class="not-kiteable">
+                                        <div class="wind">11.5/16.3kt</div>
+                                        <div class="dir">NW</div>
+
+                                        <div class="wave">🌊 0.4m</div>
+
+                                    </td><td class="not-kiteable">
+                                        <div class="wind">11.5/17.7kt</div>
+                                        <div class="dir">WNW</div>
+
+                                        <div class="wave">🌊 0.4m</div>
+
+                                    </td><td class="not-kiteable">
+                                        <div class="wind">10.4/16.1kt</div>
+                                        <div class="dir">NW</div>
+
+                                        <div class="wave">🌊 0.4m</div>
+
+                                    </td><td class="not-kiteable">
+                                        <div class="wind">9.2/15.2kt</div>
+                                        <div class="dir">NW</div>
+
+                                        <div class="wave">🌊 0.4m</div>
+
+                                    </td></tr>
+                            </table>
+                        </div>
+                    </div>
+<div class="model-updates">
+                    <h3>Forecast Model Updates</h3>
+                    <div class="model-info">
+                        <span class="model-name">AROME France HD (hourly)</span>
+                        <span class="model-run">Run: 2025-10-18 15:00 UTC</span>
+                    </div><div class="model-info">
+                        <span class="model-name">AROME France HD (15-min)</span>
+                        <span class="model-run">Run: 2025-10-18 20:00 UTC</span>
+                    </div>
+                </div>
+    <div class="timestamp">Generated at: 2025-10-18T22:45:15+0200 (CET)</div>
+</body>
+</html>
