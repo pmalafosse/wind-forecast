@@ -84,6 +84,53 @@
             margin: 0 0 15px 0;
             font-size: 1.2em;
         }
+        .daily-summary {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin: 0 0 20px 0;
+            padding: 20px;
+        }
+        .daily-summary h2 {
+            color: #2c3e50;
+            margin: 0 0 15px 0;
+            font-size: 1.4em;
+        }
+        .daily-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 20px;
+            margin: 0 -10px;
+        }
+        .day-summary {
+            padding: 0 10px;
+        }
+        .daily-summary h3 {
+            color: #34495e;
+            margin: 0 0 10px 0;
+            font-size: 1.2em;
+            padding-bottom: 5px;
+            border-bottom: 2px solid #e9ecef;
+        }
+        .daily-summary ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .daily-summary li {
+            margin: 10px 0;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 4px;
+        }
+        .daily-summary .stats {
+            color: #666;
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
+        .daily-summary .stars {
+            display: inline;
+        }
         .model-info {
             display: flex;
             justify-content: space-between;

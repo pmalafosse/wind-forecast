@@ -6,7 +6,7 @@ import subprocess
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from .schemas import WindConfig
 
@@ -122,6 +122,99 @@ class ReportRenderer:
             spot_kiteable_count.keys(), key=lambda s: spot_kiteable_count[s], reverse=True
         )
 
+        # Calculate daily summaries
+        daily_stats: Dict[Any, Dict[str, Any]] = {}
+        config = WindConfig.model_validate(data["config"])
+
+        for hour in sorted_hours:
+            dt = datetime.fromisoformat(hour.replace("Z", "+00:00"))
+            day = dt.date()
+            day_str = dt.strftime("%A, %d/%m")
+
+            if day not in daily_stats:
+                daily_stats[day] = {
+                    "day_str": day_str,
+                    "spots": {},
+                }
+
+            for spot in sorted_spots:
+                if spot not in daily_stats[day]["spots"]:
+                    daily_stats[day]["spots"][spot] = {
+                        "kiteable_hours": 0,
+                        "total_stars": 0,
+                        "total_wind": 0,
+                        "total_gusts": 0,
+                        "total_waves": 0,
+                        "wave_count": 0,
+                    }
+
+                if hour in all_forecasts and spot in all_forecasts[hour]:
+                    r = all_forecasts[hour][spot]
+                    if r["kiteable"]:
+                        stats = daily_stats[day]["spots"][spot]
+                        stats["kiteable_hours"] += 1
+                        stats["total_stars"] += self._calculate_stars(r["wind_kn"], config)
+                        stats["total_wind"] += r["wind_kn"]
+                        stats["total_gusts"] += r["gust_kn"]
+                        if r["wave_m"] is not None:
+                            stats["total_waves"] += r["wave_m"]
+                            stats["wave_count"] += 1
+
+        # Generate daily summary HTML
+        daily_parts = [
+            '<div class="daily-summary"><h2>Daily Summary</h2><div class="daily-grid">'
+        ]  # type: List[str]
+
+        for day in sorted(daily_stats.keys()):
+            day_data = daily_stats[day]
+            day_spots = []
+
+            # Calculate spot rankings for this day
+            for spot, stats in day_data["spots"].items():
+                if stats["kiteable_hours"] > 0:
+                    avg_stars = stats["total_stars"] / stats["kiteable_hours"]
+                    avg_wind = stats["total_wind"] / stats["kiteable_hours"]
+                    avg_gusts = stats["total_gusts"] / stats["kiteable_hours"]
+                    avg_waves = (
+                        stats["total_waves"] / stats["wave_count"]
+                        if stats["wave_count"] > 0
+                        else None
+                    )
+
+                    day_spots.append(
+                        {
+                            "spot": spot,
+                            "hours": stats["kiteable_hours"],
+                            "avg_stars": avg_stars,
+                            "avg_wind": avg_wind,
+                            "avg_gusts": avg_gusts,
+                            "avg_waves": avg_waves,
+                        }
+                    )
+
+            # Sort spots by kiteable hours then average stars
+            day_spots.sort(key=lambda x: (x["hours"], x["avg_stars"]), reverse=True)
+
+            if day_spots:
+                daily_parts.append(f'<div class="day-summary">')
+                daily_parts.append(f'<h3>{day_data["day_str"]}</h3><ul>')
+                for spot_data in day_spots:
+                    wave_info = (
+                        f", Waves: {spot_data['avg_waves']:.1f}m"
+                        if spot_data["avg_waves"] is not None
+                        else ""
+                    )
+                    daily_parts.append(
+                        f'<li><strong>{spot_data["spot"]}</strong> ({spot_data["hours"]} hours)'
+                        f'<div class="stats">'
+                        f'<div class="stars">{self._stars_html(round(spot_data["avg_stars"]))}</div> | '
+                        f'Wind: {spot_data["avg_wind"]:.1f}/{spot_data["avg_gusts"]:.1f}kt{wave_info}'
+                        f"</div></li>"
+                    )
+                daily_parts.append("</ul></div>")
+
+        daily_parts.extend(["</div></div>"])
+
         if not sorted_spots:
             spot_tables = ["<p>No kiteable conditions found.</p>"]
         else:
@@ -210,9 +303,9 @@ class ReportRenderer:
                 </div>"""
             )
 
-        content = template.replace("<!-- FORECAST_DATA -->", "\n".join(spot_tables)).replace(
-            "<!-- GENERATED_AT -->", data["generated_at"]
-        )
+        content = template.replace(
+            "<!-- FORECAST_DATA -->", "\n".join(daily_parts + spot_tables)
+        ).replace("<!-- GENERATED_AT -->", data["generated_at"])
 
         output_path.write_text(content)
 
