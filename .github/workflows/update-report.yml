@@ -38,15 +38,11 @@ jobs:
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
 
-      - name: Create or update reports branch
+      - name: Create and switch to reports branch
         run: |
-          # Create reports branch if it doesn't exist
-          if ! git ls-remote --heads origin reports | grep reports > /dev/null; then
-            git checkout -b reports
-          else
-            git fetch origin reports
-            git checkout reports
-          fi
+          # Create a new reports branch from the current state
+          git branch -D reports || true  # Delete local branch if it exists
+          git checkout -b reports  # Create and switch to new branch
 
       - name: Generate report
         run: |
@@ -58,5 +54,5 @@ jobs:
         run: |
           git add index.html
           git commit -m "chore: Update forecast report $(date +%Y-%m-%d_%H:%M)"
-          # Force push to overwrite remote branch completely
-          git push --force origin reports
+          # Force push to create/update remote branch
+          git push -f origin HEAD:reports
