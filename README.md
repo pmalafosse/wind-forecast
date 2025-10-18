@@ -14,7 +14,8 @@ A professional wind forecast analyzer and report generator for kitesurfing condi
 - 🌊 Accurate wind forecast analysis for multiple kitesurfing spots
 - 📊 Interactive HTML reports with detailed forecast visualization
 - ⭐ Simple star rating system (1-5 stars) for wind conditions
-- 📱 JPG snapshots for mobile viewing and sharing
+- � Optional daily summary with side-by-side day comparison
+- �📱 JPG snapshots for mobile viewing and sharing
 - ⚙️ Robust configuration with validation
 - 📈 Support for both hourly and 15-minute AROME HD forecasts
 - 🌡️ Wave height and precipitation integration
@@ -97,6 +98,12 @@ windforecast
 
 # Generate JPG snapshot
 windforecast --jpg
+
+# Include daily summary section
+windforecast --summary
+
+# Generate JPG with daily summary
+windforecast --jpg --summary
 
 # Custom configuration
 windforecast --config path/to/config.json
