@@ -7,6 +7,8 @@
 
 A professional wind forecast analyzer and report generator for kitesurfing conditions. Fetches data from AROME HD model and generates interactive HTML reports with JPG snapshots.
 
+![Example Wind Forecast Report](docs/images/report.jpg)
+
 ## Features
 
 - 🌊 Accurate wind forecast analysis for multiple kitesurfing spots
@@ -125,9 +127,12 @@ Example:
     "dir_sector": {
       "start": 225,
       "end": 45,
-      "wrap": true
+      "wrap": true  // Wrapping sector from 225° through North to 45°
     }
   }],
+
+  // Wind sectors visualization:
+  ![Wind Sectors Example](docs/images/wind_sectors.png)
   "forecast": {
     "model": "arome_france_hd",
     "hourly_vars": "wind_speed_10m,wind_direction_10m",
