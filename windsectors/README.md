@@ -2,6 +2,8 @@
 
 This directory contains tools for visualizing wind sectors for various spots defined in the project's configuration.
 
+![Wind Sectors Visualization](wind_sectors.png)
+
 ## plot_wind_sectors.py
 
 This script generates a visual representation of wind sectors for all spots defined in `config.json`. Each spot's wind sector is plotted on a polar coordinate system where:
