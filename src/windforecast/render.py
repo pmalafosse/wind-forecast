@@ -144,11 +144,9 @@ class ReportRenderer:
                 for hour in sorted_hours:
                     if hour in all_forecasts and spot in all_forecasts[hour]:
                         r = all_forecasts[hour][spot]
-                        stars = (
-                            self._calculate_stars(r["wind_kn"], data["config"])
-                            if r["kiteable"]
-                            else 0
-                        )
+                        # Convert dict config back to WindConfig for _calculate_stars
+                        config = WindConfig.model_validate(data["config"])
+                        stars = self._calculate_stars(r["wind_kn"], config) if r["kiteable"] else 0
                         stars_html = (
                             f'<div class="stars">{self._stars_html(stars)}</div>'
                             if r["kiteable"]
