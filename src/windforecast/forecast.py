@@ -225,7 +225,7 @@ class ForecastClient:
 
         result = []
         for i, spot in enumerate(self.config.spots):
-            df = _build_df(spot.name, spot.dict(), Lh[i], Lm15[i], Lw[i])
+            df = _build_df(spot.name, spot.model_dump(), Lh[i], Lm15[i], Lw[i])
             rows = []
             for _, r in df.iterrows():
                 rows.append(

@@ -18,7 +18,7 @@ def test_render_html(output_dir):
     renderer = ReportRenderer()
     test_data = {
         "generated_at": "2024-03-14T12:00:00Z",
-        "model_updates": {"arome_france_hd": {"run": "2024-03-14T12:00:00Z"}},
+        "model_updates": {"arome_france_hd": {"title": "AROME HD", "run": "2024-03-14T12:00:00Z"}},
         "spots": [
             {
                 "spot": "Test Spot",
@@ -59,11 +59,11 @@ def test_generate_jpg_no_renderer(output_dir, caplog):
     # Create dummy HTML file
     html_path.write_text("<html><body>Test</body></html>")
 
-    # Mock find_executable to return None (no renderers available)
+    # Mock find_executable and _find_chrome to return None (no renderers available)
     with pytest.MonkeyPatch.context() as mp:
         mp.setattr("shutil.which", lambda x: None)
-        success = renderer.generate_jpg(html_path, jpg_path)
+        mp.setattr(renderer, "_find_chrome", lambda: None)
+        with pytest.raises(RuntimeError, match="No renderer available for JPG generation"):
+            renderer.generate_jpg(html_path, jpg_path)
 
-        assert not success
         assert not jpg_path.exists()
-        assert "No suitable renderer found" in caplog.text

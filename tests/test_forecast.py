@@ -63,6 +63,6 @@ def test_process_forecasts(config_file, sample_forecast_data, sample_wave_data):
         assert "spots" in result
 
         # Check that we have data for each spot
-        spot_names = [spot["name"] for spot in config.spots]
+        spot_names = [spot.name for spot in config.spots]
         result_names = [spot["spot"] for spot in result["spots"]]
         assert result_names == spot_names

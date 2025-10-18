@@ -36,11 +36,11 @@ def test_invalid_json(tmp_path):
 @pytest.mark.parametrize(
     "field,invalid_value,expected_error",
     [
-        ("lat", 100, "Input should be less than or equal to 90"),
-        ("lon", -200, "Input should be greater than or equal to -180"),
-        ("dir_sector.start", 400, "Input should be less than or equal to 360"),
-        ("forecast_hours_hourly", 0, "Input should be greater than 0"),
-        ("rain_limit", -1, "Input should be greater than or equal to 0"),
+        ("spots[0].lat", 100, "Input should be less than or equal to 90"),
+        ("spots[0].lon", -200, "Input should be greater than or equal to -180"),
+        ("spots[0].dir_sector.start", 400, "Input should be less than or equal to 360"),
+        ("forecast.forecast_hours_hourly", 0, "Input should be greater than 0"),
+        ("conditions.rain_limit", -1, "Input should be greater than or equal to 0"),
     ],
 )
 def test_invalid_values(config_file, field, invalid_value, expected_error):
@@ -50,13 +50,18 @@ def test_invalid_values(config_file, field, invalid_value, expected_error):
         data = json.load(f)
 
     # Modify field
-    *path, key = field.split(".")
+    parts = field.split(".")
     target = data
-    for p in path:
-        if p == "dir_sector":
-            target = target["spots"][0][p]
+
+    for part in parts[:-1]:
+        # Handle array indexing
+        if "[" in part:
+            name, idx = part[:-3], int(part[-2])
+            target = target[name][idx]
         else:
-            target = target[p]
+            target = target[part]
+
+    key = parts[-1]
     target[key] = invalid_value
 
     # Write modified config

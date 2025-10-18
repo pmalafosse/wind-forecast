@@ -104,7 +104,8 @@ class ReportRenderer:
             # Header row
             header_cells = ["<th>Spot (kiteable hours)</th>"]
             for hour in sorted_hours:
-                dt = datetime.fromisoformat(hour)
+                # Handle 'Z' timezone designator for Python 3.8
+                dt = datetime.fromisoformat(hour.replace("Z", "+00:00"))
                 header_cells.append(f"<th>{dt.strftime('%d/%m %H:%M')}</th>")
             rows.append(f"<tr>{''.join(header_cells)}</tr>")
 
@@ -125,7 +126,7 @@ class ReportRenderer:
                         cells.append(
                             f"""
                             <td class="{'kiteable' if r['kiteable'] else 'not-kiteable'}">
-                                <div class="wind">{r['wind_kn']:.0f}/{r['gust_kn']:.0f}kt</div>
+                                <div class="wind">{r['wind_kn']:.1f}/{r['gust_kn']:.1f}kt</div>
                                 <div class="dir">{r['dir']}</div>
                                 {stars_html}
                                 {f'<div class="wave">🌊 {r["wave_m"]:.1f}m</div>' if r['wave_m'] is not None else ''}
@@ -187,17 +188,23 @@ class ReportRenderer:
         """
         logger.info(f"Generating JPG from {html_path}")
 
+        # Check if any renderer is available
+        chrome_path = self._find_chrome()
+        wk_path = shutil.which("wkhtmltoimage")
+
+        if not chrome_path and not wk_path:
+            logger.error("Could not find a renderer (Chrome/Chromium or wkhtmltoimage)")
+            raise RuntimeError("No renderer available for JPG generation")
+
         # Try Chrome/Chromium first
-        if chrome_path := self._find_chrome():
-            if self._try_chrome(chrome_path, html_path, jpg_path, viewport):
-                return True
+        if chrome_path and self._try_chrome(chrome_path, html_path, jpg_path, viewport):
+            return True
 
         # Try wkhtmltoimage
-        if wk_path := shutil.which("wkhtmltoimage"):
-            if self._try_wkhtmltoimage(wk_path, html_path, jpg_path):
-                return True
+        if wk_path and self._try_wkhtmltoimage(wk_path, html_path, jpg_path):
+            return True
 
-        logger.error("No suitable renderer found")
+        logger.error("Rendering attempts failed")
         return False
 
     def _find_chrome(self) -> Optional[str]:
