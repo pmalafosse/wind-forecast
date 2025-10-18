@@ -47,14 +47,13 @@ jobs:
 
       - name: Generate report
         run: |
-          mkdir -p reports
+          mkdir -p out
           windforecast --summary
-          cp out/report.html reports/latest.html
-          cp out/report.html "reports/$(date +%Y-%m-%d_%H-%M).html"
+          cp out/report.html index.html
 
       - name: Commit and push changes
         run: |
-          git add reports/latest.html reports/*.html || git add reports/
+          git add index.html
           if git diff --cached --quiet; then
             echo "No changes to commit"
             exit 0
