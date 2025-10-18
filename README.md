@@ -202,4 +202,4 @@ The tool will automatically detect and use:
 
 ## License
 
-MIT License. See [LICENSE](LICENSE) file.
+This project is licensed under the Creative Commons Attribution-NonCommercial 4.0 International License (CC BY-NC 4.0). This means you can share and adapt the code, but commercial use is not permitted. See the [LICENSE](LICENSE) file for details.
