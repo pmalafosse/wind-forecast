@@ -2,7 +2,7 @@
 
 This directory contains tools for visualizing wind sectors for various spots defined in the project's configuration.
 
-![Wind Sectors Visualization](wind_sectors.png)
+![Wind Sectors Visualization](../docs/images/wind_sectors.png)
 
 ## plot_wind_sectors.py
 
