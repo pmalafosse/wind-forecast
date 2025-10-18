@@ -5,9 +5,9 @@
       "lat": 41.3948,
       "lon": 2.2105,
       "dir_sector": {
-        "start": 225,
-        "end": 45,
-        "wrap": true
+        "start": 45,
+        "end": 247.5,
+        "wrap": false
       }
     },
     {
@@ -15,8 +15,8 @@
       "lat": 41.2629,
       "lon": 1.9818,
       "dir_sector": {
-        "start": 190,
-        "end": 359,
+        "start": 90,
+        "end": 270,
         "wrap": false
       }
     },
@@ -25,9 +25,9 @@
       "lat": 41.63,
       "lon": 2.73,
       "dir_sector": {
-        "start": 200,
-        "end": 20,
-        "wrap": true
+        "start": 67.5,
+        "end": 247.5,
+        "wrap": false
       }
     },
     {
@@ -35,8 +35,8 @@
       "lat": 41.85,
       "lon": 3.13,
       "dir_sector": {
-        "start": 200,
-        "end": 330,
+        "start": 112.5,
+        "end": 247.5,
         "wrap": false
       }
     },
@@ -45,9 +45,9 @@
       "lat": 42.19,
       "lon": 3.11,
       "dir_sector": {
-        "start": 180,
-        "end": 67.5,
-        "wrap": true
+        "start": 0,
+        "end": 180,
+        "wrap": false
       }
     },
     {
@@ -55,9 +55,9 @@
       "lat": 42.26,
       "lon": 3.15,
       "dir_sector": {
-        "start": 225,
-        "end": 67.5,
-        "wrap": true
+        "start": 22.5,
+        "end": 210,
+        "wrap": false
       }
     },
     {
@@ -65,9 +65,9 @@
       "lat": 41.19,
       "lon": 1.65,
       "dir_sector": {
-        "start": 225,
-        "end": 90,
-        "wrap": true
+        "start": 67.5,
+        "end": 225,
+        "wrap": false
       }
     },
     {
@@ -75,8 +75,8 @@
       "lat": 42.8364,
       "lon": 3.0237,
       "dir_sector": {
-        "start": 315,
-        "end": 180,
+        "start": 270,
+        "end": 360,
         "wrap": false
       }
     },
@@ -85,9 +85,9 @@
       "lat": 42.8012,
       "lon": 2.9958,
       "dir_sector": {
-        "start": 67.5,
-        "end": 180,
-        "wrap": false
+        "start": 270,
+        "end": 45,
+        "wrap": true
       }
     },
     {
@@ -95,8 +95,8 @@
       "lat": 40.7301,
       "lon": 0.8412,
       "dir_sector": {
-        "start": 315,
-        "end": 45,
+        "start": 300,
+        "end": 70,
         "wrap": true
       }
     },
@@ -105,9 +105,9 @@
       "lat": 40.62,
       "lon": 0.68,
       "dir_sector": {
-        "start": 45,
-        "end": 90,
-        "wrap": false
+        "start": 180,
+        "end": 30,
+        "wrap": true
       }
     },
     {
@@ -115,9 +115,9 @@
       "lat": 42.78,
       "lon": 3.04,
       "dir_sector": {
-        "start": 180,
-        "end": 45,
-        "wrap": true
+        "start": 0,
+        "end": 180,
+        "wrap": false
       }
     },
     {
@@ -125,8 +125,8 @@
       "lat": 43.1373,
       "lon": 2.9971,
       "dir_sector": {
-        "start": 45,
-        "end": 225,
+        "start": 200,
+        "end": 337,
         "wrap": false
       }
     }
