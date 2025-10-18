@@ -247,6 +247,7 @@ class ForecastClient:
             "generated_at": datetime.utcnow().isoformat() + "Z",
             "model_updates": model_updates,
             "spots": result,
+            "config": self.config,
         }
 
     @staticmethod
