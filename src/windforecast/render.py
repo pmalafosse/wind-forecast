@@ -130,10 +130,18 @@ class ReportRenderer:
 
             # Header row
             header_cells = ["<th>Spot (kiteable hours)</th>"]
+            prev_day = None
             for hour in sorted_hours:
                 # Handle 'Z' timezone designator for Python 3.8
                 dt = datetime.fromisoformat(hour.replace("Z", "+00:00"))
-                header_cells.append(f"<th>{dt.strftime('%d/%m %H:%M')}</th>")
+                curr_day = dt.date()
+
+                # Add day separator class if day changes
+                day_class = ' class="day-start"' if prev_day != curr_day else ""
+                header_cells.append(
+                    f'<th{day_class}>{dt.strftime("%a %d/%m")}<br>{dt.strftime("%H:%M")}</th>'
+                )
+                prev_day = curr_day
             rows.append(f"<tr>{''.join(header_cells)}</tr>")
 
             # Data rows
@@ -141,7 +149,13 @@ class ReportRenderer:
                 cells = [
                     f"<td class='spotcol'><strong>{spot}</strong> ({spot_kiteable_count[spot]})</td>"
                 ]
+                prev_day = None
                 for hour in sorted_hours:
+                    dt = datetime.fromisoformat(hour.replace("Z", "+00:00"))
+                    curr_day = dt.date()
+                    day_class = " day-start" if prev_day != curr_day else ""
+                    prev_day = curr_day
+
                     if hour in all_forecasts and spot in all_forecasts[hour]:
                         r = all_forecasts[hour][spot]
                         # Convert dict config back to WindConfig for _calculate_stars
@@ -154,7 +168,7 @@ class ReportRenderer:
                         )
                         cells.append(
                             f"""
-                            <td class="{'kiteable' if r['kiteable'] else 'not-kiteable'}">
+                            <td class="{'kiteable' if r['kiteable'] else 'not-kiteable'}{day_class}">
                                 <div class="wind">{r['wind_kn']:.1f}/{r['gust_kn']:.1f}kt</div>
                                 <div class="dir">{r['dir']}</div>
                                 {stars_html}
