@@ -36,14 +36,12 @@ jobs:
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
 
-      - name: Create and switch to reports branch
+      - name: Create reports branch from main
         run: |
-          # Ensure we are on the existing reports branch
-          git fetch origin reports:reports || true
-          git checkout reports
-          # Merge latest main into reports to ensure assets are up-to-date
-          git fetch origin main:main || true
-          git merge --no-edit main || true
+          # Fetch main branch
+          git fetch origin main:main
+          # Create new reports branch from main, overwriting if it exists
+          git checkout -B reports main
 
       - name: Generate report
         run: |
