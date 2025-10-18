@@ -78,7 +78,12 @@ Restrict analysis to daylight hours:
 
 ### Conditions
 Define wind thresholds and limits:
-- `bands`: List of [name, threshold] pairs in descending order
+- `bands`: List of [name, threshold] pairs in descending order, also determines star ratings:
+  - ⭐⭐⭐⭐⭐ (5 stars): ≥ 25 knots
+  - ⭐⭐⭐⭐ (4 stars): ≥ 20 knots
+  - ⭐⭐⭐ (3 stars): ≥ 17 knots
+  - ⭐⭐ (2 stars): ≥ 15 knots
+  - ⭐ (1 star): ≥ 12 knots
 - `rain_limit`: Maximum acceptable precipitation (mm/h)
 - `min_run_hours`: Minimum consecutive hours for a session
 
