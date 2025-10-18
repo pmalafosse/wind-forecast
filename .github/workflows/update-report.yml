@@ -2,7 +2,9 @@ name: Update Forecast Report
 
 on:
   schedule:
-    - cron: '*/30 * * * *'  # Run every 30 minutes
+    # Run every 30 minutes from 6:00 UTC to 0:30 UTC (skipping 1:00-6:00 UTC)
+    - cron: '*/30 0 * * *'  # From 00:00 to 00:30
+    - cron: '*/30 6-23 * * *'  # From 06:00 to 23:30
   workflow_dispatch:  # Allow manual trigger
 
 jobs:
