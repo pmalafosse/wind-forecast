@@ -74,7 +74,6 @@ class Conditions(BaseModel):
 
     bands: List[Tuple[str, float]] = Field(description="Wind speed bands and their thresholds")
     rain_limit: float = Field(ge=0, description="Maximum acceptable precipitation rate in mm/h")
-    min_run_hours: float = Field(ge=0, description="Minimum consecutive hours for a session")
 
     @validator("bands")
     def validate_bands(cls, v: List[Tuple[str, float]]) -> List[Tuple[str, float]]:
@@ -117,7 +116,6 @@ class WindConfig(BaseModel):
                 "conditions": {
                     "bands": [["too much", 40], ["good", 17], ["light", 12]],
                     "rain_limit": 0.5,
-                    "min_run_hours": 2.0,
                 },
             }
         }

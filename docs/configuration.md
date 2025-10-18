@@ -45,8 +45,7 @@ The wind forecast application uses a JSON configuration file (`config.json`) to 
       ["light", 12],
       ["below", 0]
     ],
-    "rain_limit": 0.5,
-    "min_run_hours": 2.0
+    "rain_limit": 0.5
   }
 }
 ```
@@ -85,7 +84,6 @@ Define wind thresholds and limits:
   - ⭐⭐ (2 stars): ≥ 15 knots
   - ⭐ (1 star): ≥ 12 knots
 - `rain_limit`: Maximum acceptable precipitation (mm/h)
-- `min_run_hours`: Minimum consecutive hours for a session
 
 ## Validation
 
