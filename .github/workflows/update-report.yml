@@ -6,6 +6,9 @@ on:
     - cron: '*/30 0 * * *'  # From 00:00 to 00:30
     - cron: '*/30 6-23 * * *'  # From 06:00 to 23:30
   workflow_dispatch:  # Allow manual trigger
+  push:
+    branches:
+      - reports  # Only run on push to reports branch
 
 jobs:
   update-report:
@@ -38,13 +41,13 @@ jobs:
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
 
-      - name: Create reports branch from main
+      - name: Reset reports to main content
         run: |
-          # Fetch both branches
+          # Fetch main branch
           git fetch origin main
-          git fetch origin reports
-          # Reset to main branch content
-          git checkout reports
+          # Switch to reports branch (create if it doesn't exist)
+          git checkout reports || git checkout -b reports
+          # Reset to main's content
           git reset --hard origin/main
 
       - name: Generate report
