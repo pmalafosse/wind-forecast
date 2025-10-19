@@ -15,8 +15,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          token: ${{ github.token }}  # Explicit token usage
-          persist-credentials: true    # Ensure credentials are available
+          fetch-depth: 0  # Fetch all history for all branches
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -39,14 +38,14 @@ jobs:
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
 
-      - name: Create orphan reports branch
+      - name: Create reports branch from main
         run: |
-          # Create a completely new branch with no history
-          git checkout --orphan reports
-          # Remove all files from staging
-          git rm -rf .
-          # Create empty branch
-          git commit --allow-empty -m "Initial empty commit for reports branch"
+          # Fetch both branches
+          git fetch origin main
+          git fetch origin reports
+          # Reset to main branch content
+          git checkout reports
+          git reset --hard origin/main
 
       - name: Generate report
         run: |
