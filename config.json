@@ -71,6 +71,16 @@
       }
     },
     {
+      "name": "Cambrils",
+      "lat": 41.0638,
+      "lon": 1.0862,
+      "dir_sector": {
+        "start": 67.5,
+        "end": 240,
+        "wrap": false
+      }
+    },
+    {
       "name": "Parc des Dosses",
       "lat": 42.8364,
       "lon": 3.0237,
