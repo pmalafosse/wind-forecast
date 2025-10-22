@@ -330,7 +330,10 @@ class ReportRenderer:
 
                         cell_html = f"""<td class="{' '.join(cell_classes)}"{style_attr}>
                             <div class="wind">{r['wind_kn']:.1f}/{r['gust_kn']:.1f}kt</div>
-                            <div class="dir">{r['dir']}</div>
+                            <div class="dir">
+                                <span class="dir-arrow" style="transform: rotate({r['dir_deg'] + 180}deg)">↑</span>
+                                {r['dir']}
+                            </div>
                             {stars_html}
                             {f'<div class="wave">🌊 {r["wave_m"]:.1f}m</div>' if r['wave_m'] is not None else ''}
                             {f'<div class="rain">🌧 {r["precip_mm_h"]:.1f}mm</div>' if r['precip_mm_h'] > 0 else ''}
