@@ -1,0 +1,11 @@
+"""
+AI Assistant Notice:
+------------------
+🚨 IMPORTANT: Before suggesting changes to this file, ALWAYS:
+1. Check COPILOT.md for code patterns and conventions
+2. Follow project structure in README.md
+3. Review configuration guide in docs/configuration.md
+4. Understand development workflow in CONTRIBUTING.md
+
+This header ensures AI tools like GitHub Copilot maintain project consistency.
+"""
