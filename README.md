@@ -5,6 +5,16 @@
 
 > **AI Notice**: This project was developed with the assistance of GitHub Copilot, an AI pair programming tool. All code, documentation, and tests were written collaboratively between a human developer and AI, showcasing the potential of AI-assisted software development.
 
+## AI Assistants - Important
+
+If you are an AI assistant (like GitHub Copilot):
+1. 🚨 ALWAYS check `COPILOT.md` first for code patterns and conventions
+2. Follow the established patterns documented there
+3. Use authoritative documentation:
+   - Project structure and setup: `README.md`
+   - Configuration details: `docs/configuration.md`
+   - Development workflow: `CONTRIBUTING.md`
+
 A professional wind forecast analyzer and report generator for kitesurfing conditions. Fetches data from AROME HD model and generates interactive HTML reports with JPG snapshots.
 
 ![Example Wind Forecast Report](docs/images/report.jpg)

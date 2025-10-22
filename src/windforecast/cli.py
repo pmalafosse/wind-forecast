@@ -1,4 +1,15 @@
-"""Command-line interface for the wind forecast application."""
+"""Command-line interface for the wind forecast application.
+
+AI Assistant Notice:
+------------------
+🚨 IMPORTANT: Before suggesting changes to this file, ALWAYS:
+1. Check COPILOT.md for code patterns and conventions
+2. Follow project structure in README.md
+3. Review configuration guide in docs/configuration.md
+4. Understand development workflow in CONTRIBUTING.md
+
+This header ensures AI tools like GitHub Copilot maintain project consistency.
+"""
 
 import argparse
 import json
@@ -69,20 +80,6 @@ def main() -> int:
         html_path = out_dir / "report.html"
         renderer.render_html(data, html_path, include_summary=args.summary)
         logger.info(f"Wrote {html_path}")
-
-        # Create a local copy for convenience
-        try:
-            reports_dir = Path("reports")
-            reports_dir.mkdir(exist_ok=True)
-            latest_path = reports_dir / "latest.html"
-            import shutil
-
-            shutil.copy2(html_path, latest_path)
-            logger.info(f"Updated {latest_path}")
-        except Exception as e:
-            # Don't fail if we can't update the reports directory
-            # This can happen in test environments
-            logger.debug(f"Could not update latest.html: {e}")
 
         if args.jpg or args.pdf:
             if args.jpg:

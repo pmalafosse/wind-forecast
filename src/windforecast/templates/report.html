@@ -11,6 +11,61 @@
             -moz-osx-font-smoothing: grayscale;
             text-rendering: optimizeLegibility;
         }
+        .controls {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: white;
+            padding: 20px;
+            margin: -20px -20px 20px -20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+        .controls button {
+            padding: 8px 16px;
+            border-radius: 4px;
+            border: 1px solid #dee2e6;
+            background: #f8f9fa;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        .controls button:hover {
+            background: #e9ecef;
+        }
+        .controls button.active {
+            background: #007bff;
+            color: white;
+            border-color: #0056b3;
+        }
+        .search-box {
+            flex: 1;
+            max-width: 300px;
+            position: relative;
+        }
+        .search-box input {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .search-box input:focus {
+            outline: none;
+            border-color: #80bdff;
+            box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25);
+        }
+        .search-box input::placeholder {
+            color: #6c757d;
+        }
+        tr[data-hidden="true"] {
+            display: none;
+        }
+        tr[data-filtered="true"] {
+            display: none;
+        }
     </style>
     <style>
         @media print {
@@ -218,16 +273,51 @@
             font-family: monospace;
         }
         /* Cell styles */
-        .kiteable {
+        .cell-data {
+            background-color: #f8f9fa;
+            color: #6c757d;
+        }
+
+        .cell-data.kiteable {
             background-color: #f1f8ff;
+            color: inherit;
         }
-        .not-kiteable {
-            background-color: #f8f9fa;
-            color: #6c757d;
+
+        /* View switching */
+        #kiteable-view {
+            display: block;
         }
-        .no {
-            background-color: #f8f9fa;
-            color: #6c757d;
+        #all-conditions-view {
+            display: none;
+        }
+
+        body[data-show-all="true"] #kiteable-view {
+            display: none;
+        }
+        body[data-show-all="true"] #all-conditions-view {
+            display: block;
+        }
+
+        /* Hide filtered rows */
+        tr[data-filtered="true"] {
+            display: none !important;
+        }
+
+        /* Wind band styles */
+        .too-much {
+            background-color: #ffe5e5 !important;
+        }
+        .hardcore {
+            background-color: #fff3cd !important;
+        }
+        .good {
+            background-color: #e8f5e9 !important;
+        }
+        .light {
+            background-color: #e3f2fd !important;
+        }
+        .below {
+            background-color: #f8f9fa !important;
         }
         .stars {
             color: #f1c40f;
@@ -245,6 +335,48 @@
 </head>
 <body>
     <h1>Wind Forecast Report</h1>
+    <div class="controls">
+        <button id="toggleView" onclick="toggleViewMode()">Show All Conditions</button>
+        <div class="search-box">
+            <input type="text" id="spotSearch" placeholder="Search spots..." oninput="filterSpots()">
+        </div>
+    </div>
+    <script>
+        let showAllConditions = false;
+
+        function toggleViewMode() {
+            showAllConditions = !showAllConditions;
+            const button = document.getElementById('toggleView');
+            button.textContent = showAllConditions ? 'Show Kiteable Only' : 'Show All Conditions';
+            button.classList.toggle('active');
+            document.body.setAttribute('data-show-all', showAllConditions);
+        }
+
+        function filterSpots() {
+            const searchTerm = document.getElementById('spotSearch').value.toLowerCase();
+            const currentView = showAllConditions ? 'all-conditions-view' : 'kiteable-view';
+
+            document.querySelectorAll(`#${currentView} tr.spot-row`).forEach(row => {
+                const spotCell = row.querySelector('td.spotcol');
+                if (!spotCell) return;
+
+                const spotName = spotCell.textContent.toLowerCase();
+                const matches = spotName.includes(searchTerm);
+
+                if (matches) {
+                    row.removeAttribute('data-filtered');
+                } else {
+                    row.setAttribute('data-filtered', 'true');
+                }
+            });
+        }
+
+        // Initialize view mode
+        document.addEventListener('DOMContentLoaded', function() {
+            // Start in kiteable-only mode
+            document.body.removeAttribute('data-show-all');
+        });
+    </script>
     <!-- FORECAST_DATA -->
     <div class="timestamp">Generated at: <!-- GENERATED_AT --></div>
 </body>

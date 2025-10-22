@@ -1,4 +1,24 @@
-"""Report generation and rendering utilities."""
+"""Report generation and rendering utilities.
+
+AI Assistant Notice:
+------------------
+🚨 IMPORTANT: Before suggesting changes to this file, ALWAYS:
+1. Check COPILOT.md for code patterns and conventions
+2. Follow project structure in README.md
+3. Review configuration guide in docs/configuration.md
+4. Understand development workflow in CONTRIBUTING.md
+
+Package Structure:
+---------------
+This file is part of the windforecast package:
+src/windforecast/render.py
+
+ALWAYS use package imports like:
+    from windforecast.render import ReportRenderer
+NEVER use direct file imports or reference files in root directory
+
+This header ensures AI tools like GitHub Copilot maintain project consistency.
+"""
 
 import logging
 import shutil
@@ -153,120 +173,233 @@ class ReportRenderer:
                 all_forecasts[time][spot["spot"]] = r
                 if r["kiteable"]:
                     kiteable_count += 1
-            if kiteable_count > 0:  # Only include spots that have kiteable conditions
-                spot_kiteable_count[spot["spot"]] = kiteable_count
+            spot_kiteable_count[spot["spot"]] = kiteable_count  # Include all spots
 
-        # Find times with at least one kiteable condition
-        kiteable_hours = {
-            time
-            for time, spots in all_forecasts.items()
-            if any(r["kiteable"] for r in spots.values())
+        # Initialize spot and hour tracking
+        all_spots = {spot["spot"] for spot in data["spots"]}
+        all_hours = {row["time"] for spot in data["spots"] for row in spot["rows"]}
+
+        # Create data structures for different views
+        kiteable_forecasts: Dict[str, Dict[str, Any]] = {}  # Only kiteable conditions
+        all_forecasts_clean: Dict[str, Dict[str, Any]] = {}  # All conditions
+        spot_tables: List[str] = []  # Initialize tables list
+        kiteable_tables: List[str] = []  # Initialize kiteable conditions tables
+        all_tables: List[str] = []  # Initialize all conditions tables
+
+        # Track kiteable hours per day for each spot
+        spot_kiteable_hours: Dict[date, Dict[str, Set[str]]] = {}  # {date: {spot: set(hours)}}
+        kiteable_hours_by_day: Dict[date, Set[str]] = (
+            {}
+        )  # {date: set(hours)}        # Process forecasts and organize by views
+        for hour in all_hours:
+            dt = datetime.fromisoformat(hour.replace("Z", "+00:00"))
+            day = dt.date()
+
+            # Initialize data structures if needed
+            if hour not in kiteable_forecasts:
+                kiteable_forecasts[hour] = {}
+                all_forecasts_clean[hour] = {}
+
+            if day not in spot_kiteable_hours:
+                spot_kiteable_hours[day] = {}
+                kiteable_hours_by_day[day] = set()
+
+            for spot in all_spots:
+                if hour in all_forecasts and spot in all_forecasts[hour]:
+                    forecast = all_forecasts[hour][spot]
+                    # Add to all conditions view
+                    all_forecasts_clean[hour][spot] = forecast
+
+                    # Track kiteable conditions
+                    if forecast["kiteable"]:
+                        kiteable_forecasts[hour][spot] = forecast
+                        # Initialize spot in tracking if needed
+                        if spot not in spot_kiteable_hours[day]:
+                            spot_kiteable_hours[day][spot] = set()
+                        # Add hour to spot's kiteable hours for the day
+                        spot_kiteable_hours[day][spot].add(hour)
+                        kiteable_hours_by_day[day].add(hour)
+
+        # Remove hours with no kiteable conditions from kiteable view
+        kiteable_forecasts = {hour: spots for hour, spots in kiteable_forecasts.items() if spots}
+
+        # Get all spots that have at least one kiteable condition
+        kiteable_spots = {
+            spot for day_data in spot_kiteable_hours.values() for spot in day_data.keys()
         }
 
-        # Sort hours chronologically and spots by kiteable hours
-        sorted_hours = sorted(kiteable_hours)
-        sorted_spots = sorted(
-            spot_kiteable_count.keys(), key=lambda s: spot_kiteable_count[s], reverse=True
-        )
+        # Generate tables for each day and each view
+        spot_tables.clear()
+        kiteable_tables.clear()
+        all_tables.clear()
 
-        if not sorted_spots:
-            spot_tables = ["<p>No kiteable conditions found.</p>"]
-        else:
-            spot_tables = []
+        if not kiteable_spots:
+            kiteable_tables.append("<p>No kiteable conditions found.</p>")
 
-            # Add daily summary if requested
-            if include_summary:
-                daily_summary = self._generate_daily_summary(data, sorted_spots, all_forecasts)
-                if daily_summary:
-                    spot_tables.append(daily_summary)
+        # Add daily summary if requested
+        if include_summary:
+            daily_summary = self._generate_daily_summary(data, list(all_spots), all_forecasts)
+            if daily_summary:
+                kiteable_tables.append(daily_summary)
+                all_tables.append(daily_summary)
 
-            # Group hours by date and track kiteable hours per spot per day
-            hours_by_day: Dict[date, List[str]] = {}
-            spot_kiteable_by_day: Dict[date, Dict[str, int]] = {}
-            kiteable_hours_by_day: Dict[date, Set[str]] = {}
-
-            for hour in sorted_hours:
-                dt = datetime.fromisoformat(hour.replace("Z", "+00:00"))
-                day = dt.date()
-
-                # Initialize day structures if needed
-                if day not in hours_by_day:
-                    hours_by_day[day] = []
-                    spot_kiteable_by_day[day] = {}
-                    kiteable_hours_by_day[day] = set()
-
-                # Only include hours where at least one spot is kiteable
-                has_kiteable_spot = False
-                for spot, spot_data in all_forecasts[hour].items():
-                    if spot_data["kiteable"]:
-                        has_kiteable_spot = True
-                        spot_kiteable_by_day[day][spot] = spot_kiteable_by_day[day].get(spot, 0) + 1
-
-                if has_kiteable_spot:
-                    hours_by_day[day].append(hour)
-                    kiteable_hours_by_day[day].add(hour)
-
-            # Create a table for each day
-            for day, day_hours in sorted(hours_by_day.items()):
-                rows = []
-                daily_spots = [s for s in sorted_spots if spot_kiteable_by_day[day].get(s, 0) > 0]
-                # Sort spots based on kiteable hours for this specific day
-                daily_spots.sort(key=lambda s: spot_kiteable_by_day[day].get(s, 0), reverse=True)
-
-                # Header row for this day
-                header_cells = ["<th>Spot</th>"]
-                for hour in sorted(kiteable_hours_by_day[day]):
-                    dt = datetime.fromisoformat(hour.replace("Z", "+00:00"))
-                    header_cells.append(f'<th>{dt.strftime("%H:%M")}</th>')
-                rows.append(f"<tr>{''.join(header_cells)}</tr>")
-
-                # Data rows for this day's kiteable spots
-                for spot in daily_spots:
-                    daily_kiteable_hours = spot_kiteable_by_day[day].get(spot, 0)
-                    if daily_kiteable_hours > 0:  # Only include spots with kiteable hours today
-                        cells = [f"<td class='spotcol'><strong>{spot}</strong></td>"]
-
-                        for hour in sorted(kiteable_hours_by_day[day]):
-                            if hour in all_forecasts and spot in all_forecasts[hour]:
-                                r = all_forecasts[hour][spot]
-                                config = WindConfig.model_validate(data["config"])
-                                stars = (
-                                    self._calculate_stars(r["wind_kn"], config)
-                                    if r["kiteable"]
-                                    else 0
-                                )
-                                stars_html = (
-                                    f'<div class="stars">{self._stars_html(stars)}</div>'
-                                    if r["kiteable"]
-                                    else ""
-                                )
-                                cells.append(
-                                    f"""<td class="{'kiteable' if r['kiteable'] else 'not-kiteable'}">
-                                        <div class="wind">{r['wind_kn']:.1f}/{r['gust_kn']:.1f}kt</div>
-                                        <div class="dir">{r['dir']}</div>
-                                        {stars_html}
-                                        {f'<div class="wave">🌊 {r["wave_m"]:.1f}m</div>' if r['wave_m'] is not None else ''}
-                                        {f'<div class="rain">🌧 {r["precip_mm_h"]:.1f}mm</div>' if r['precip_mm_h'] > 0 else ''}
-                                    </td>"""
-                                )
-                            else:
-                                cells.append('<td class="no">—</td>')
-                        rows.append(f"<tr>{''.join(cells)}</tr>")
-
-                # Create the day section
-                day_str = day.strftime("%A, %d %B")
-                spot_tables.append(
-                    f"""<div class="day-section">
-                        <h2>{day_str}</h2>
-                        <div class="table-container">
-                            <table class="forecast-table">
-                                {''.join(rows)}
-                            </table>
-                        </div>
-                    </div>"""
+        # Function to generate daily table content
+        def generate_table_section(
+            day: date, forecast_data: Dict[str, Dict[str, Any]], view_type: str
+        ) -> str:
+            # Get hours for this day based on view type
+            if view_type == "kiteable":
+                # For kiteable view, only include hours with kiteable conditions
+                day_hours = sorted(hour for hour in kiteable_hours_by_day[day])
+            else:
+                # For all-conditions view, include all hours for the day
+                day_hours = sorted(
+                    hour
+                    for hour in all_hours
+                    if datetime.fromisoformat(hour.replace("Z", "+00:00")).date() == day
                 )
 
-        # Add model updates section
+            if not day_hours:
+                return ""
+
+            # Get spots for this day based on view type
+            if view_type == "kiteable":
+                # For kiteable view, only include spots that have kiteable hours
+                daily_spots = sorted(
+                    [spot for spot in all_spots if spot in spot_kiteable_hours[day]],
+                    key=lambda s: (len(spot_kiteable_hours[day].get(s, set())), s),
+                    reverse=True,
+                )
+            else:
+                # For all-conditions view, include all spots
+                daily_spots = sorted(
+                    all_spots,
+                    key=lambda s: (len(spot_kiteable_hours[day].get(s, set())), s),
+                    reverse=True,
+                )
+
+            rows = []
+
+            # Generate header row
+            header_cells = ["<th>Spot</th>"]
+            for hour in day_hours:
+                dt = datetime.fromisoformat(hour.replace("Z", "+00:00"))
+                header_classes = ["hour-header"]
+                # For kiteable view, all hours are kiteable. For all view, mark non-kiteable hours
+                if view_type == "all" and hour not in kiteable_hours_by_day[day]:
+                    header_classes.append("no-kiteable")
+                header_cells.append(
+                    f'<th data-hour="{hour}" class="{" ".join(header_classes)}">'
+                    f'{dt.strftime("%H:%M")}</th>'
+                )
+            rows.append(f"<tr>{''.join(header_cells)}</tr>")
+
+            # Generate data rows
+            for spot in daily_spots:
+                cells = [f"<td class='spotcol'><strong>{spot}</strong></td>"]
+                spot_has_kiteable = False
+
+                for hour in day_hours:
+                    if hour in forecast_data and spot in forecast_data[hour]:
+                        r = forecast_data[hour][spot]
+                        config = WindConfig.model_validate(data["config"])
+                        stars = self._calculate_stars(r["wind_kn"], config) if r["kiteable"] else 0
+                        stars_html = (
+                            f'<div class="stars">{self._stars_html(stars)}</div>'
+                            if r["kiteable"]
+                            else ""
+                        )
+
+                        # Determine wind band
+                        wind_band = "below"
+                        for band_name, threshold in config.conditions.bands:
+                            if r["wind_kn"] >= threshold:
+                                wind_band = band_name.lower().replace(" ", "-")
+                                break
+
+                        cell_classes = ["cell-data", wind_band]
+                        style_attr = ""
+                        if r["kiteable"]:
+                            cell_classes.append("kiteable")
+                            spot_has_kiteable = True
+                        else:
+                            cell_classes.append("not-kiteable")
+                            # Only hide non-kiteable cells in the kiteable view
+                            if view_type == "kiteable" and hour in kiteable_hours_by_day[day]:
+                                style_attr = ' style="display: none;"'
+
+                        cell_html = f"""<td class="{' '.join(cell_classes)}"{style_attr}>
+                            <div class="wind">{r['wind_kn']:.1f}/{r['gust_kn']:.1f}kt</div>
+                            <div class="dir">{r['dir']}</div>
+                            {stars_html}
+                            {f'<div class="wave">🌊 {r["wave_m"]:.1f}m</div>' if r['wave_m'] is not None else ''}
+                            {f'<div class="rain">🌧 {r["precip_mm_h"]:.1f}mm</div>' if r['precip_mm_h'] > 0 else ''}
+                        </td>"""
+                        cells.append(cell_html)
+                    else:
+                        cells.append('<td class="no-data">—</td>')
+
+                # Add row with appropriate classes
+                row_classes = ["spot-row"]
+                # For all view, mark spots with no kiteable hours
+                if view_type == "all" and not spot_has_kiteable:
+                    row_classes.append("no-kiteable-spot")
+
+                rows.append(f"<tr class='{' '.join(row_classes)}'>{''.join(cells)}</tr>")
+
+            day_str = day.strftime("%A, %d %B")
+            return f"""<div class="day-section">
+                <h2>{day_str}</h2>
+                <div class="table-container">
+                    <table class="forecast-table">
+                        {''.join(rows)}
+                    </table>
+                </div>
+            </div>"""
+
+        # Generate tables for each day and each view
+        all_days = sorted(
+            {datetime.fromisoformat(h.replace("Z", "+00:00")).date() for h in all_hours}
+        )
+
+        # Create tables for both views - ensure lists are empty
+        spot_tables.clear()
+        kiteable_tables.clear()
+        all_tables.clear()
+
+        if not kiteable_spots:
+            kiteable_tables.append("<p>No kiteable conditions found.</p>")
+
+        # Add daily summary if requested
+        if include_summary:
+            daily_summary = self._generate_daily_summary(data, list(all_spots), all_forecasts)
+            if daily_summary:
+                kiteable_tables.append(daily_summary)
+                all_tables.append(daily_summary)
+
+        # Generate tables for each day and view
+        for day in all_days:
+            # Generate tables for each view
+            kiteable_section = generate_table_section(day, kiteable_forecasts, "kiteable")
+            all_section = generate_table_section(day, all_forecasts_clean, "all")
+
+            if kiteable_section:
+                kiteable_tables.append(kiteable_section)
+            if all_section:
+                all_tables.append(all_section)
+
+        # Create view divs
+        spot_tables.append(
+            f"""
+            <div id="kiteable-view">
+                {''.join(kiteable_tables)}
+            </div>
+            <div id="all-conditions-view">
+                {''.join(all_tables)}
+            </div>"""
+        )
+
+        # Add model updates section at the end of both views
         model_info = []
         for model_id, info in data.get("model_updates", {}).items():
             if info.get("run"):
@@ -279,12 +412,11 @@ class ReportRenderer:
                 )
 
         if model_info:
-            spot_tables.append(
-                f"""<div class="model-updates">
-                    <h3>Forecast Model Updates</h3>
-                    {''.join(model_info)}
-                </div>"""
-            )
+            updates_section = f"""<div class="model-updates">
+                <h3>Forecast Model Updates</h3>
+                {''.join(model_info)}
+            </div>"""
+            spot_tables.append(updates_section)
 
         # Convert generated_at timestamp to CET
         generated_at = datetime.fromisoformat(data["generated_at"].replace("Z", "+00:00"))
