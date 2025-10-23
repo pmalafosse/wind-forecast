@@ -53,7 +53,7 @@ jobs:
       - name: Generate report
         run: |
           mkdir -p out
-          windforecast --summary
+          windforecast
           cp out/report.html index.html
 
       - name: Commit and push changes

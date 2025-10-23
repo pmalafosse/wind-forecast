@@ -112,11 +112,8 @@ windforecast --jpg
 # Generate PDF version
 windforecast --pdf
 
-# Include daily summary section
-windforecast --summary
-
-# Generate both JPG and PDF with daily summary
-windforecast --jpg --pdf --summary
+# Generate both JPG and PDF
+windforecast --jpg --pdf
 
 # Custom configuration
 windforecast --config path/to/config.json
