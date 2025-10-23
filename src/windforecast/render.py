@@ -328,35 +328,16 @@ class ReportRenderer:
                             if view_type == "kiteable" and hour in kiteable_hours_by_day[day]:
                                 style_attr = ' style="display: none;"'
 
-                        # Convert cardinal direction to degrees if dir_deg is not available
-                        dir_deg = r.get("dir_deg")
-                        if dir_deg is None:
-                            # Map cardinal directions to degrees
-                            dir_map = {
-                                "N": 0,
-                                "NNE": 22.5,
-                                "NE": 45,
-                                "ENE": 67.5,
-                                "E": 90,
-                                "ESE": 112.5,
-                                "SE": 135,
-                                "SSE": 157.5,
-                                "S": 180,
-                                "SSW": 202.5,
-                                "SW": 225,
-                                "WSW": 247.5,
-                                "W": 270,
-                                "WNW": 292.5,
-                                "NW": 315,
-                                "NNW": 337.5,
-                            }
-                            dir_deg = dir_map.get(r["dir"], 0)  # Default to North if unknown
+                        # Get dir_deg from the field if present, otherwise 0
+                        dir_deg = r.get("dir_deg", 0)  # Default to 0° (North) if not specified
 
                         cell_html = f"""<td class="{' '.join(cell_classes)}"{style_attr}>
-                            <div class="wind">{r['wind_kn']:.1f}/{r['gust_kn']:.1f}kt</div>
                             <div class="dir">
                                 <span class="dir-arrow" style="transform: rotate({dir_deg + 180}deg)">↑</span>
                                 {r['dir']}
+                            </div>
+                            <div class="wind">
+                                {r["wind_kn"]:.1f}/{r["gust_kn"]:.1f}kt
                             </div>
                             {stars_html}
                             {f'<div class="wave">🌊 {r["wave_m"]:.1f}m</div>' if r['wave_m'] is not None else ''}
