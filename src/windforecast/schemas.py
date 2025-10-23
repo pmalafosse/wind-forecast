@@ -6,6 +6,20 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_valida
 from pydantic.types import PositiveInt, confloat
 
 
+class WindSpeedThresholds(BaseModel):
+    """Thresholds for wind speed conditions."""
+
+    min_kts: float = Field(ge=0, description="Minimum kiteable wind speed in knots")
+    max_kts: float = Field(gt=0, description="Maximum kiteable wind speed in knots")
+
+    @model_validator(mode="after")
+    def validate_thresholds(self) -> "WindSpeedThresholds":
+        """Validate that min is less than max."""
+        if self.min_kts >= self.max_kts:
+            raise ValueError("min_kts must be less than max_kts")
+        return self
+
+
 class DirectionSector(BaseModel):
     """Wind direction sector configuration."""
 
@@ -61,7 +75,7 @@ class TimeWindow(BaseModel):
     @model_validator(mode="after")
     def validate_window(self) -> "TimeWindow":
         """Validate that end time is after start time."""
-        if self.day_end < self.day_start:
+        if self.day_end <= self.day_start:
             raise ValueError("day_end must be after day_start")
         return self
 

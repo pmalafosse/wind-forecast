@@ -1,19 +1,16 @@
 """Tests for cell visibility in different views."""
 
-import datetime
 from pathlib import Path
 
 import pytest
 from bs4 import BeautifulSoup
 
 from windforecast.render import ReportRenderer
-from windforecast.schemas import WindConfig
 
 
-def test_all_conditions_visibility():
-    """Test that all cells are visible in the all-conditions view."""
-    # Create test data
-    test_data = {
+def create_test_data_with_mixed_conditions():
+    """Create test data with both kiteable and non-kiteable conditions."""
+    return {
         "generated_at": "2025-10-22T10:00:00Z",
         "config": {
             "spots": [
@@ -36,16 +33,10 @@ def test_all_conditions_visibility():
                 "bands": [
                     ["too much", 35],
                     ["hardcore", 30],
-                    ["insane", 25],
-                    ["great", 20],
-                    ["very good", 18],
                     ["good", 15],
-                    ["ok", 12],
                     ["light", 8],
                     ["below", 0],
                 ],
-                "min_kiteable": 12,  # "ok" and above are kiteable
-                "max_kiteable": 35,
                 "rain_limit": 0.5,
             },
         },
@@ -53,7 +44,6 @@ def test_all_conditions_visibility():
             {
                 "spot": "Test Beach",
                 "rows": [
-                    # Mix of kiteable and non-kiteable conditions
                     {
                         "time": "2025-10-22T12:00:00Z",
                         "wind_kn": 15,
@@ -77,38 +67,23 @@ def test_all_conditions_visibility():
         ],
     }
 
-    # Create temporary output file
-    output_path = Path("test_output.html")
 
-    # Render the report
+def test_all_conditions_visibility(tmp_path):
+    """Test that all cells are visible in the all-conditions view."""
+    output_path = tmp_path / "test_output.html"
     renderer = ReportRenderer()
-    renderer.render_html(test_data, output_path)
+    renderer.render_html(create_test_data_with_mixed_conditions(), output_path)
 
-    # Parse the generated HTML
-    with open(output_path) as f:
-        soup = BeautifulSoup(f.read(), "html.parser")
-
-    # Test all-conditions view
+    soup = BeautifulSoup(output_path.read_text(), "html.parser")
     all_view = soup.find("div", id="all-conditions-view")
-
-    # Get all data cells (excluding header and spot column)
     all_cells = all_view.find_all("td", class_="cell-data")
 
-    # Verify that we have some cells to test
+    # Verify we have cells and none are hidden
     assert len(all_cells) > 0, "No data cells found in all-conditions view"
-
-    # Check that none of the cells in all-conditions view have style="display: none"
-    hidden_cells = [
-        cell for cell in all_cells if "style" in cell.attrs and "display: none" in cell["style"]
-    ]
+    hidden_cells = [c for c in all_cells if "display: none" in c.get("style", "")]
     assert len(hidden_cells) == 0, f"Found {len(hidden_cells)} hidden cells in all-conditions view"
 
-    # Also verify that both kiteable and not-kiteable cells exist
-    kiteable_cells = [cell for cell in all_cells if "kiteable" in cell.get("class", [])]
-    not_kiteable_cells = [cell for cell in all_cells if "not-kiteable" in cell.get("class", [])]
-
-    assert len(kiteable_cells) > 0, "No kiteable cells found"
-    assert len(not_kiteable_cells) > 0, "No not-kiteable cells found"
-
-    # Cleanup
-    output_path.unlink()
+    # Verify both kiteable and non-kiteable cells exist
+    kiteable_cells = [c for c in all_cells if "kiteable" in c.get("class", [])]
+    not_kiteable_cells = [c for c in all_cells if "not-kiteable" in c.get("class", [])]
+    assert len(kiteable_cells) > 0 and len(not_kiteable_cells) > 0, "Both cell types should exist"

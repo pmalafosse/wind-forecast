@@ -4,6 +4,27 @@ import logging
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Tuple
 
+from .config import load_config
+
+# Initialize logger
+logger = logging.getLogger(__name__)
+
+
+def get_wind_forecast(config_path: Optional[str] = None) -> Dict[str, Any]:
+    """
+    Fetch and process wind forecast data using the given configuration.
+
+    Args:
+        config_path: Path to config.json file. If None, looks in standard locations.
+
+    Returns:
+        Dictionary containing processed forecast data.
+    """
+    config = load_config(config_path)
+    client = ForecastClient(config)
+    return client.fetch_forecasts()
+
+
 import pandas as pd
 import requests
 

@@ -70,32 +70,30 @@ def load_config(config_path: Optional[Union[Path, str]] = None) -> WindConfig:
             return config
         except ValidationError as e:
             # Extract error details
-            error = e.errors()[0]  # Get the first error
-            logger.debug(f"Validation error: {error}")
+            errors = e.errors()
+            logger.debug(f"Validation errors: {errors}")
 
-            # Map error types to expected messages
-            error_type = error.get("type", "")
-            error_msg = error.get("msg", "")
-            error_ctx = error.get("ctx", {})
+            # Find first relevant validation error
+            for error in errors:
+                error_type = error.get("type", "")
+                error_msg = error.get("msg", "")
 
-            if error_type == "less_than_equal":
-                msg = f"Input should be less than or equal to {error_ctx.get('le', '')}"
-            elif error_type == "greater_than_equal":
-                msg = f"Input should be greater than or equal to {error_ctx.get('ge', '')}"
-            elif error_type == "greater_than":
-                msg = f"Input should be greater than {error_ctx.get('gt', '')}"
-            elif error_type == "value_error":
+                # Check for band threshold validation error
+                if "Band thresholds must be in strictly descending order" in error_msg:
+                    msg = "Band thresholds must be in strictly descending order"
+                    logger.error(f"Invalid configuration: {msg}")
+                    raise ValueError(msg)
+
+                # Check for day start/end validation error
                 if "day_end must be after day_start" in error_msg:
                     msg = "day_end must be after day_start"
-                elif "Band thresholds must be in strictly descending order" in error_msg:
-                    msg = "Band thresholds must be in strictly descending order"
-                else:
-                    msg = error_msg
-            else:
-                msg = error_msg
+                    logger.error(f"Invalid configuration: {msg}")
+                    raise ValueError(msg)
 
+            # If no specific validation error found, raise first error
+            msg = errors[0]["msg"]
             logger.error(
-                f"Invalid configuration at {' -> '.join(str(x) for x in error['loc'])}: {msg}"
+                f"Invalid configuration at {' -> '.join(str(x) for x in errors[0]['loc'])}: {msg}"
             )
             raise ValueError(msg)
 

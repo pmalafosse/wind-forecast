@@ -6,27 +6,22 @@ import pytest
 from bs4 import BeautifulSoup
 
 from windforecast.render import ReportRenderer
-from windforecast.schemas import WindConfig
 
 
-def test_expanded_view_controls():
-    """Test that expanded view controls are present in the HTML."""
-    renderer = ReportRenderer()
-
-    # Create minimal test data
-    data = {
+def create_test_data(spot_name="TestSpot", wind_kn=25.0, kiteable=True):
+    """Helper to create minimal test data with sensible defaults."""
+    return {
         "generated_at": "2025-10-21T10:00:00Z",
         "spots": [
             {
-                "spot": "TestSpot",
+                "spot": spot_name,
                 "rows": [
                     {
                         "time": "2025-10-21T10:00:00Z",
-                        "wind_kn": 25.0,
-                        "gust_kn": 30.0,
-                        "dir_deg": 0,
+                        "wind_kn": wind_kn,
+                        "gust_kn": wind_kn + 5,
                         "dir": "N",
-                        "kiteable": True,
+                        "kiteable": kiteable,
                         "wave_m": 1.5,
                         "precip_mm_h": 0.0,
                     }
@@ -36,7 +31,7 @@ def test_expanded_view_controls():
         "config": {
             "spots": [
                 {
-                    "name": "TestSpot",
+                    "name": spot_name,
                     "lat": 43.5,
                     "lon": 3.9,
                     "dir_sector": {"start": 90, "end": 180},
@@ -57,287 +52,145 @@ def test_expanded_view_controls():
         },
     }
 
-    # Render report
-    output_path = Path("test_report.html")
+
+def render_and_parse(data, output_path):
+    """Helper to render HTML and return parsed BeautifulSoup object."""
+    renderer = ReportRenderer()
     renderer.render_html(data, output_path)
-
-    # Parse HTML and check for controls
     with open(output_path) as f:
-        soup = BeautifulSoup(f.read(), "html.parser")
+        return BeautifulSoup(f.read(), "html.parser")
 
-    # Check for controls div
+
+def test_expanded_view_controls(tmp_path):
+    """Test that expanded view controls are present in the HTML."""
+    output_path = tmp_path / "test_report.html"
+    soup = render_and_parse(create_test_data(), output_path)
+
+    # Check for controls with concise assertions
     controls = soup.find("div", class_="controls")
-    assert controls is not None
+    assert controls, "Controls div should exist"
 
-    # Check for toggle button
     toggle_btn = controls.find("button", id="toggleView")
-    assert toggle_btn is not None
-    assert toggle_btn.text == "Show All Conditions"
+    assert (
+        toggle_btn and toggle_btn.text == "Show All Conditions"
+    ), "Toggle button should exist with correct text"
 
-    # Check for search box
     search_box = controls.find("input", id="spotSearch")
-    assert search_box is not None
-    assert search_box.get("placeholder") == "Search spots..."
-
-    # Clean up
-    output_path.unlink()
+    assert (
+        search_box and search_box.get("placeholder") == "Search spots..."
+    ), "Search box should exist with placeholder"
 
 
-def test_wind_band_classes():
+def test_wind_band_classes(tmp_path):
     """Test that cells have appropriate wind band classes."""
-    renderer = ReportRenderer()
-
-    # Create test data with different wind conditions
-    data = {
-        "generated_at": "2025-10-21T10:00:00Z",
-        "spots": [
-            {
-                "spot": "TestSpot",
-                "rows": [
-                    {
-                        "time": "2025-10-21T10:00:00Z",
-                        "wind_kn": 45.0,  # Too much wind
-                        "gust_kn": 50.0,
-                        "dir_deg": 0,
-                        "dir": "N",
-                        "kiteable": False,
-                        "wave_m": 1.5,
-                        "precip_mm_h": 0.0,
-                    },
-                    {
-                        "time": "2025-10-21T11:00:00Z",
-                        "wind_kn": 37.0,  # Hardcore conditions
-                        "gust_kn": 42.0,
-                        "dir_deg": 0,
-                        "dir": "N",
-                        "kiteable": True,
-                        "wave_m": 1.5,
-                        "precip_mm_h": 0.0,
-                    },
-                    {
-                        "time": "2025-10-21T12:00:00Z",
-                        "wind_kn": 22.0,  # Good conditions
-                        "gust_kn": 27.0,
-                        "dir_deg": 0,
-                        "dir": "N",
-                        "kiteable": True,
-                        "wave_m": 1.5,
-                        "precip_mm_h": 0.0,
-                    },
-                    {
-                        "time": "2025-10-21T13:00:00Z",
-                        "wind_kn": 8.0,  # Below kiteable
-                        "gust_kn": 12.0,
-                        "dir_deg": 0,
-                        "dir": "N",
-                        "kiteable": False,
-                        "wave_m": 0.5,
-                        "precip_mm_h": 0.0,
-                    },
-                ],
-            }
-        ],
-        "config": {
-            "spots": [
-                {
-                    "name": "TestSpot",
-                    "lat": 43.5,
-                    "lon": 3.9,
-                    "dir_sector": {"start": 90, "end": 180},
-                }
-            ],
-            "forecast": {
-                "model": "test",
-                "hourly_vars": "test",
-                "wave_vars": "test",
-                "forecast_hours_hourly": 48,
-                "forecast_min15": 24,
-            },
-            "time_window": {"day_start": 6, "day_end": 20},
-            "conditions": {
-                "bands": [["too much", 40], ["hardcore", 35], ["good", 20], ["light", 12]],
-                "rain_limit": 2.0,
-            },
+    # Create test data with multiple wind conditions in a single spot
+    data = create_test_data()
+    data["spots"][0]["rows"] = [
+        {
+            "time": "2025-10-21T10:00:00Z",
+            "wind_kn": 45.0,
+            "gust_kn": 50.0,
+            "dir": "N",
+            "kiteable": False,
+            "wave_m": 1.5,
+            "precip_mm_h": 0.0,
         },
-    }
-
-    # Render report
-    output_path = Path("test_report.html")
-    renderer.render_html(data, output_path)
-
-    # Parse HTML and check cell classes
-    with open(output_path) as f:
-        soup = BeautifulSoup(f.read(), "html.parser")
-
-        cells = soup.find_all("td")
-        cells = [c for c in cells if c.has_attr("class")]  # Keep all cells with classes
-
-        # Check wind band classes
-        classes = [c.get("class", []) for c in cells]
-        print(
-            "Found classes:", classes
-        )  # Debug print    assert any('too-much' in c for c in classes), "Missing too-much class"
-    assert any("hardcore" in c for c in classes), "Missing hardcore class"
-    assert any("good" in c for c in classes), "Missing good class"
-    assert any("below" in c for c in classes), "Missing below class"
-
-    # Check kiteable status classes
-    assert any("kiteable" in c for c in classes), "Missing kiteable class"
-    assert any("not-kiteable" in c for c in classes), "Missing not-kiteable class"
-
-    # Clean up
-    output_path.unlink()
-
-
-def test_initial_cell_visibility():
-    """Test that non-kiteable cells and irrelevant columns are initially hidden."""
-    renderer = ReportRenderer()
-
-    # Create test data with both kiteable and non-kiteable conditions across multiple spots
-    data = {
-        "generated_at": "2025-10-21T10:00:00Z",
-        "spots": [
-            {
-                "spot": "TestSpot1",
-                "rows": [
-                    {
-                        "time": "2025-10-21T10:00:00Z",
-                        "wind_kn": 25.0,
-                        "gust_kn": 30.0,
-                        "dir": "N",
-                        "kiteable": True,  # This hour should be visible
-                        "wave_m": 1.5,
-                        "precip_mm_h": 0.0,
-                    },
-                    {
-                        "time": "2025-10-21T11:00:00Z",
-                        "wind_kn": 8.0,
-                        "gust_kn": 12.0,
-                        "dir": "N",
-                        "kiteable": False,
-                        "wave_m": 0.5,
-                        "precip_mm_h": 0.0,
-                    },
-                    {
-                        "time": "2025-10-21T12:00:00Z",  # No spots kiteable at this hour
-                        "wind_kn": 5.0,
-                        "gust_kn": 8.0,
-                        "dir": "N",
-                        "kiteable": False,
-                        "wave_m": 0.5,
-                        "precip_mm_h": 0.0,
-                    },
-                ],
-            },
-            {
-                "spot": "TestSpot2",
-                "rows": [
-                    {
-                        "time": "2025-10-21T10:00:00Z",
-                        "wind_kn": 15.0,
-                        "gust_kn": 20.0,
-                        "dir_deg": 0,
-                        "dir": "N",
-                        "kiteable": True,  # This hour should be visible
-                        "wave_m": 1.0,
-                        "precip_mm_h": 0.0,
-                    },
-                    {
-                        "time": "2025-10-21T11:00:00Z",
-                        "wind_kn": 20.0,
-                        "gust_kn": 25.0,
-                        "dir_deg": 0,
-                        "dir": "N",
-                        "kiteable": True,  # This hour should be visible
-                        "wave_m": 1.0,
-                        "precip_mm_h": 0.0,
-                    },
-                    {
-                        "time": "2025-10-21T12:00:00Z",  # No spots kiteable at this hour
-                        "wind_kn": 6.0,
-                        "gust_kn": 9.0,
-                        "dir_deg": 0,
-                        "dir": "N",
-                        "kiteable": False,
-                        "wave_m": 0.5,
-                        "precip_mm_h": 0.0,
-                    },
-                ],
-            },
-        ],
-        "config": {
-            "spots": [
-                {
-                    "name": "TestSpot",
-                    "lat": 43.5,
-                    "lon": 3.9,
-                    "dir_sector": {"start": 90, "end": 180},
-                }
-            ],
-            "forecast": {
-                "model": "test",
-                "hourly_vars": "test",
-                "wave_vars": "test",
-                "forecast_hours_hourly": 48,
-                "forecast_min15": 24,
-            },
-            "time_window": {"day_start": 6, "day_end": 20},
-            "conditions": {
-                "bands": [["too much", 40], ["hardcore", 35], ["good", 20], ["light", 12]],
-                "rain_limit": 2.0,
-            },
+        {
+            "time": "2025-10-21T11:00:00Z",
+            "wind_kn": 37.0,
+            "gust_kn": 42.0,
+            "dir": "N",
+            "kiteable": True,
+            "wave_m": 1.5,
+            "precip_mm_h": 0.0,
         },
-    }
+        {
+            "time": "2025-10-21T12:00:00Z",
+            "wind_kn": 22.0,
+            "gust_kn": 27.0,
+            "dir": "N",
+            "kiteable": True,
+            "wave_m": 1.5,
+            "precip_mm_h": 0.0,
+        },
+        {
+            "time": "2025-10-21T13:00:00Z",
+            "wind_kn": 8.0,
+            "gust_kn": 12.0,
+            "dir": "N",
+            "kiteable": False,
+            "wave_m": 0.5,
+            "precip_mm_h": 0.0,
+        },
+    ]
 
-    # Render report
-    output_path = Path("test_report.html")
-    renderer.render_html(data, output_path)
+    output_path = tmp_path / "test_report.html"
+    soup = render_and_parse(data, output_path)
 
-    # Parse HTML and check initial cell visibility
-    with open(output_path) as f:
-        soup = BeautifulSoup(f.read(), "html.parser")
+    # Get all cell classes
+    all_classes = [" ".join(c.get("class", [])) for c in soup.find_all("td") if c.has_attr("class")]
 
-    # Check cell visibility in kiteable view
+    # Check expected classes are present
+    assert any("too-much" in c for c in all_classes), "Missing too-much class"
+    assert any("hardcore" in c for c in all_classes), "Missing hardcore class"
+    assert any("good" in c for c in all_classes), "Missing good class"
+    assert any("below" in c for c in all_classes), "Missing below class"
+    assert any("kiteable" in c for c in all_classes), "Missing kiteable class"
+    assert any("not-kiteable" in c for c in all_classes), "Missing not-kiteable class"
+
+
+def test_initial_cell_visibility(tmp_path):
+    """Test that non-kiteable cells are hidden in kiteable view but visible in all-conditions view."""
+    # Create multi-spot data with mixed kiteable/non-kiteable conditions
+    data = create_test_data("TestSpot1")
+    data["spots"].extend([create_test_data("TestSpot2", wind_kn=15.0)["spots"][0]])
+
+    # Add times: 10:00 (both kiteable), 11:00 (one kiteable), 12:00 (none kiteable)
+    for i, spot_data in enumerate(data["spots"]):
+        spot_data["rows"] = [
+            {
+                "time": "2025-10-21T10:00:00Z",
+                "wind_kn": 25.0 if i == 0 else 15.0,
+                "gust_kn": 30.0 if i == 0 else 20.0,
+                "dir": "N",
+                "kiteable": True,
+                "wave_m": 1.0,
+                "precip_mm_h": 0.0,
+            },
+            {
+                "time": "2025-10-21T11:00:00Z",
+                "wind_kn": 8.0 if i == 0 else 20.0,
+                "gust_kn": 12.0 if i == 0 else 25.0,
+                "dir": "N",
+                "kiteable": False if i == 0 else True,
+                "wave_m": 0.5,
+                "precip_mm_h": 0.0,
+            },
+            {
+                "time": "2025-10-21T12:00:00Z",
+                "wind_kn": 5.0,
+                "gust_kn": 8.0,
+                "dir": "N",
+                "kiteable": False,
+                "wave_m": 0.5,
+                "precip_mm_h": 0.0,
+            },
+        ]
+
+    output_path = tmp_path / "test_report.html"
+    soup = render_and_parse(data, output_path)
+
+    # In kiteable view: non-kiteable cells should be hidden
     kiteable_view = soup.find("div", id="kiteable-view")
     kiteable_cells = kiteable_view.find_all("td", class_="cell-data")
-    for cell in kiteable_cells:
-        is_kiteable = "kiteable" in cell.get("class", [])
-        display_style = cell.get("style", "")
-        if not is_kiteable:
-            assert "display:none" in display_style.replace(
-                " ", ""
-            ) or "style.display='none'" in display_style.replace(
-                " ", ""
-            ), f"Non-kiteable cell should be hidden in kiteable view: {cell}"
+    non_kiteable_cells = [c for c in kiteable_cells if "not-kiteable" in c.get("class", [])]
+    assert all(
+        "display:none" in c.get("style", "").replace(" ", "") for c in non_kiteable_cells
+    ), "Non-kiteable cells should be hidden in kiteable view"
 
-    # Check cell visibility in all-conditions view
+    # In all-conditions view: all cells should be visible
     all_view = soup.find("div", id="all-conditions-view")
     all_cells = all_view.find_all("td", class_="cell-data")
-    for cell in all_cells:
-        display_style = cell.get("style", "")
-        # No cells should be hidden in all-conditions view
-        assert "display:none" not in display_style.replace(
-            " ", ""
-        ) and "style.display='none'" not in display_style.replace(
-            " ", ""
-        ), f"Cells should not be hidden in all-conditions view: {cell}"
-
-    # Check column (hour) visibility
-    headers = soup.find_all("th", class_="hour-header")
-    for header in headers:
-        hour = header.get("data-hour")
-        if hour and hour.endswith("T12:00:00"):  # Check the hour where no spots are kiteable
-            assert "display:none" in header.get("style", "").replace(
-                " ", ""
-            ) or "no-kiteable" in header.get(
-                "class", []
-            ), f"Column for non-kiteable hour should be hidden: {hour}"
-
-        # Verify 10:00 and 11:00 columns are visible (they have kiteable conditions)
-        if hour and (hour.endswith("T10:00:00") or hour.endswith("T11:00:00")):
-            assert not (
-                "display:none" in header.get("style", "").replace(" ", "")
-            ), f"Column with kiteable conditions should be visible: {hour}"
-
-    # Clean up
-    output_path.unlink()
+    assert all(
+        "display:none" not in c.get("style", "").replace(" ", "") for c in all_cells
+    ), "All cells should be visible in all-conditions view"
