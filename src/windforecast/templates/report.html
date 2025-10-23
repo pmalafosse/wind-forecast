@@ -301,6 +301,16 @@
             display: none;
         }
 
+        /* Daily summary toggle */
+        .daily-summary {
+            display: none !important;
+            transition: opacity 0.3s ease;
+        }
+        body[data-show-summary="true"] .daily-summary {
+            display: block !important;
+            opacity: 1;
+        }
+
         body[data-show-all="true"] #kiteable-view {
             display: none;
         }
@@ -343,16 +353,30 @@
         }
     </style>
 </head>
-<body>
+<body data-show-summary="false">
     <h1>Wind Forecast Report</h1>
     <div class="controls">
         <button id="toggleView" onclick="toggleViewMode()">Show All Conditions</button>
+        <button id="toggleSummary" onclick="toggleDailySummary()">Show Daily Summary</button>
         <div class="search-box">
             <input type="text" id="spotSearch" placeholder="Search spots..." oninput="filterSpots()">
         </div>
     </div>
     <script>
+        // Initialize state variables
         let showAllConditions = false;
+        let showDailySummary = false;
+
+        // Set initial state immediately
+        document.documentElement.setAttribute('data-show-summary', 'false');
+
+        function toggleDailySummary() {
+            showDailySummary = !showDailySummary;
+            const button = document.getElementById('toggleSummary');
+            button.textContent = showDailySummary ? 'Hide Daily Summary' : 'Show Daily Summary';
+            button.classList.toggle('active');
+            document.body.setAttribute('data-show-summary', showDailySummary ? 'true' : 'false');
+        }
 
         function toggleViewMode() {
             showAllConditions = !showAllConditions;
@@ -381,11 +405,22 @@
             });
         }
 
-        // Initialize view mode
-        document.addEventListener('DOMContentLoaded', function() {
+        // Initialize view mode immediately and on DOM load
+        function initializeUI() {
             // Start in kiteable-only mode
             document.body.removeAttribute('data-show-all');
-        });
+            // Start with daily summary hidden
+            document.body.setAttribute('data-show-summary', 'false');
+            // Initialize button states
+            document.getElementById('toggleSummary').textContent = 'Show Daily Summary';
+            document.getElementById('toggleView').textContent = 'Show All Conditions';
+        }
+
+        // Run initialization immediately
+        initializeUI();
+
+        // Also run on DOM load in case elements weren't available immediately
+        document.addEventListener('DOMContentLoaded', initializeUI);
     </script>
     <!-- FORECAST_DATA -->
     <div class="timestamp">Generated at: <!-- GENERATED_AT --></div>

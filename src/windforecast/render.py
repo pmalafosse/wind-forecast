@@ -154,7 +154,7 @@ class ReportRenderer:
         </div>"""
 
     def render_html(
-        self, data: Dict[str, Any], output_path: Path, include_summary: bool = False
+        self, data: Dict[str, Any], output_path: Path, include_summary: bool = True
     ) -> None:
         """Render forecast data to HTML report."""
         with open(self.template_dir / "report.html") as f:
@@ -235,13 +235,6 @@ class ReportRenderer:
 
         if not kiteable_spots:
             kiteable_tables.append("<p>No kiteable conditions found.</p>")
-
-        # Add daily summary if requested
-        if include_summary:
-            daily_summary = self._generate_daily_summary(data, list(all_spots), all_forecasts)
-            if daily_summary:
-                kiteable_tables.append(daily_summary)
-                all_tables.append(daily_summary)
 
         # Function to generate daily table content
         def generate_table_section(
@@ -370,20 +363,21 @@ class ReportRenderer:
             {datetime.fromisoformat(h.replace("Z", "+00:00")).date() for h in all_hours}
         )
 
-        # Create tables for both views - ensure lists are empty
+        # Start with fresh lists
         spot_tables.clear()
         kiteable_tables.clear()
         all_tables.clear()
 
-        if not kiteable_spots:
-            kiteable_tables.append("<p>No kiteable conditions found.</p>")
-
-        # Add daily summary if requested
+        # Add daily summary if enabled
         if include_summary:
             daily_summary = self._generate_daily_summary(data, list(all_spots), all_forecasts)
             if daily_summary:
                 kiteable_tables.append(daily_summary)
                 all_tables.append(daily_summary)
+
+        # Handle case of no kiteable spots
+        if not kiteable_spots:
+            kiteable_tables.append("<p>No kiteable conditions found.</p>")
 
         # Generate tables for each day and view
         for day in all_days:
