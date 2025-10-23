@@ -24,6 +24,7 @@ def test_expanded_view_controls():
                         "time": "2025-10-21T10:00:00Z",
                         "wind_kn": 25.0,
                         "gust_kn": 30.0,
+                        "dir_deg": 0,
                         "dir": "N",
                         "kiteable": True,
                         "wave_m": 1.5,
@@ -97,6 +98,7 @@ def test_wind_band_classes():
                         "time": "2025-10-21T10:00:00Z",
                         "wind_kn": 45.0,  # Too much wind
                         "gust_kn": 50.0,
+                        "dir_deg": 0,
                         "dir": "N",
                         "kiteable": False,
                         "wave_m": 1.5,
@@ -106,6 +108,7 @@ def test_wind_band_classes():
                         "time": "2025-10-21T11:00:00Z",
                         "wind_kn": 37.0,  # Hardcore conditions
                         "gust_kn": 42.0,
+                        "dir_deg": 0,
                         "dir": "N",
                         "kiteable": True,
                         "wave_m": 1.5,
@@ -115,6 +118,7 @@ def test_wind_band_classes():
                         "time": "2025-10-21T12:00:00Z",
                         "wind_kn": 22.0,  # Good conditions
                         "gust_kn": 27.0,
+                        "dir_deg": 0,
                         "dir": "N",
                         "kiteable": True,
                         "wave_m": 1.5,
@@ -124,6 +128,7 @@ def test_wind_band_classes():
                         "time": "2025-10-21T13:00:00Z",
                         "wind_kn": 8.0,  # Below kiteable
                         "gust_kn": 12.0,
+                        "dir_deg": 0,
                         "dir": "N",
                         "kiteable": False,
                         "wave_m": 0.5,
@@ -231,6 +236,7 @@ def test_initial_cell_visibility():
                         "time": "2025-10-21T10:00:00Z",
                         "wind_kn": 15.0,
                         "gust_kn": 20.0,
+                        "dir_deg": 0,
                         "dir": "N",
                         "kiteable": True,  # This hour should be visible
                         "wave_m": 1.0,
@@ -240,6 +246,7 @@ def test_initial_cell_visibility():
                         "time": "2025-10-21T11:00:00Z",
                         "wind_kn": 20.0,
                         "gust_kn": 25.0,
+                        "dir_deg": 0,
                         "dir": "N",
                         "kiteable": True,  # This hour should be visible
                         "wave_m": 1.0,
@@ -249,6 +256,7 @@ def test_initial_cell_visibility():
                         "time": "2025-10-21T12:00:00Z",  # No spots kiteable at this hour
                         "wind_kn": 6.0,
                         "gust_kn": 9.0,
+                        "dir_deg": 0,
                         "dir": "N",
                         "kiteable": False,
                         "wave_m": 0.5,
