@@ -153,9 +153,7 @@ class ReportRenderer:
             <div class="daily-grid">{''.join(sections)}</div>
         </div>"""
 
-    def render_html(
-        self, data: Dict[str, Any], output_path: Path, include_summary: bool = True
-    ) -> None:
+    def render_html(self, data: Dict[str, Any], output_path: Path) -> None:
         """Render forecast data to HTML report."""
         with open(self.template_dir / "report.html") as f:
             template = f.read()
@@ -368,12 +366,11 @@ class ReportRenderer:
         kiteable_tables.clear()
         all_tables.clear()
 
-        # Add daily summary if enabled
-        if include_summary:
-            daily_summary = self._generate_daily_summary(data, list(all_spots), all_forecasts)
-            if daily_summary:
-                kiteable_tables.append(daily_summary)
-                all_tables.append(daily_summary)
+        # Generate daily summary
+        daily_summary = self._generate_daily_summary(data, list(all_spots), all_forecasts)
+        if daily_summary:
+            kiteable_tables.append(daily_summary)
+            all_tables.append(daily_summary)
 
         # Handle case of no kiteable spots
         if not kiteable_spots:

@@ -60,7 +60,7 @@ def test_daily_summary_initial_state(tmp_path):
 
     renderer = ReportRenderer()
     report_path = tmp_path / "test_report.html"
-    renderer.render_html(test_data, report_path, include_summary=True)
+    renderer.render_html(test_data, report_path)
 
     # Read the generated HTML
     html_content = report_path.read_text()
@@ -141,7 +141,7 @@ def test_daily_summary_interaction(tmp_path):
 
     renderer = ReportRenderer()
     report_path = tmp_path / "test_report.html"
-    renderer.render_html(test_data, report_path, include_summary=True)
+    renderer.render_html(test_data, report_path)
 
     # Print the generated HTML for debugging
     html_content = report_path.read_text()
