@@ -328,9 +328,17 @@ class ReportRenderer:
                             if view_type == "kiteable" and hour in kiteable_hours_by_day[day]:
                                 style_attr = ' style="display: none;"'
 
+                        # Get dir_deg from the field if present, otherwise 0
+                        dir_deg = r.get("dir_deg", 0)  # Default to 0° (North) if not specified
+
                         cell_html = f"""<td class="{' '.join(cell_classes)}"{style_attr}>
-                            <div class="wind">{r['wind_kn']:.1f}/{r['gust_kn']:.1f}kt</div>
-                            <div class="dir">{r['dir']}</div>
+                            <div class="dir">
+                                <span class="dir-arrow" style="transform: rotate({dir_deg + 180}deg)">↑</span>
+                                {r['dir']}
+                            </div>
+                            <div class="wind">
+                                {r["wind_kn"]:.1f}/{r["gust_kn"]:.1f}kt
+                            </div>
                             {stars_html}
                             {f'<div class="wave">🌊 {r["wave_m"]:.1f}m</div>' if r['wave_m'] is not None else ''}
                             {f'<div class="rain">🌧 {r["precip_mm_h"]:.1f}mm</div>' if r['precip_mm_h'] > 0 else ''}

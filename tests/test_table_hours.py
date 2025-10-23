@@ -58,6 +58,7 @@ def test_table_hours():
                         "time": "2025-10-22T06:00:00Z",
                         "wind_kn": 10,  # Below min_kiteable
                         "gust_kn": 12,
+                        "dir_deg": 0,
                         "dir": "N",
                         "kiteable": False,
                         "wave_m": None,
@@ -67,6 +68,7 @@ def test_table_hours():
                         "time": "2025-10-22T07:00:00Z",
                         "wind_kn": 11,  # Below min_kiteable
                         "gust_kn": 13,
+                        "dir_deg": 0,
                         "dir": "N",
                         "kiteable": False,
                         "wave_m": None,
@@ -77,6 +79,7 @@ def test_table_hours():
                         "time": "2025-10-22T12:00:00Z",
                         "wind_kn": 15,
                         "gust_kn": 18,
+                        "dir_deg": 0,
                         "dir": "N",
                         "kiteable": True,
                         "wave_m": None,
@@ -86,6 +89,7 @@ def test_table_hours():
                         "time": "2025-10-22T13:00:00Z",
                         "wind_kn": 20,
                         "gust_kn": 25,
+                        "dir_deg": 0,
                         "dir": "N",
                         "kiteable": True,
                         "wave_m": None,
@@ -96,6 +100,7 @@ def test_table_hours():
                         "time": "2025-10-22T19:00:00Z",
                         "wind_kn": 10,  # Below min_kiteable
                         "gust_kn": 12,
+                        "dir_deg": 0,
                         "dir": "N",
                         "kiteable": False,
                         "wave_m": None,
@@ -105,6 +110,7 @@ def test_table_hours():
                         "time": "2025-10-22T20:00:00Z",
                         "wind_kn": 9,  # Below min_kiteable
                         "gust_kn": 11,
+                        "dir_deg": 0,
                         "dir": "N",
                         "kiteable": False,
                         "wave_m": None,
