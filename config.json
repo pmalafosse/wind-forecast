@@ -150,7 +150,7 @@
   },
   "time_window": {
     "day_start": 6,
-    "day_end": 20
+    "day_end": 21
   },
   "conditions": {
     "bands": [
