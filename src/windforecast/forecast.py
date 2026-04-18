@@ -1,7 +1,7 @@
 """Forecast data fetching and processing."""
 
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Tuple
 
 from .config import load_config
@@ -71,6 +71,10 @@ class ForecastClient:
             "wind_speed_unit": "kn",
             "timezone": "Europe/Madrid",
             "forecast_hours": self.config.forecast.forecast_hours_hourly,
+            # "sea" snaps to the nearest offshore grid point, matching Windguru's values.
+            # Without this, Open-Meteo picks the nearest land cell which has higher surface
+            # roughness and produces systematically lower 10m wind speeds for coastal spots.
+            "cell_selection": "sea",
         }
         r_hourly = requests.get(self.base_url, params=params_hourly, timeout=30)
         r_hourly.raise_for_status()
@@ -84,6 +88,7 @@ class ForecastClient:
             "wind_speed_unit": "kn",
             "timezone": "Europe/Madrid",
             "forecast_minutely_15": self.config.forecast.forecast_min15,
+            "cell_selection": "sea",
         }
         r_min15 = requests.get(self.base_url, params=params_min15, timeout=30)
         r_min15.raise_for_status()
@@ -270,7 +275,7 @@ class ForecastClient:
             result.append({"spot": spot.name, "rows": rows})
 
         return {
-            "generated_at": datetime.utcnow().isoformat() + "Z",
+            "generated_at": datetime.now(timezone.utc).isoformat(),
             "model_updates": model_updates,
             "spots": result,
             "config": self.config.model_dump(),
