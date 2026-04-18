@@ -78,6 +78,17 @@ The pipeline runs in sequence: `config.json` → `load_config()` → `ForecastCl
 <td class="cell-data {wind_band} {kiteable|not-kiteable}" data-hour="{hour}" data-kiteable="{true|false}">
 ```
 
+Report structure uses day sections:
+
+```html
+<div class="day-section">
+  <h2>{date}</h2>
+  <div class="table-container">
+    <table class="forecast-table"><!-- ... --></table>
+  </div>
+</div>
+```
+
 **`cli.py`**: Thin argument parser — delegates everything to `ForecastClient` and `ReportRenderer`.
 
 **`logging.py`**: `configure_logging(verbose=True, log_file=Path(...))` — call before anything else if you need debug output.
