@@ -49,10 +49,11 @@ jobs:
           mkdir -p out
           uv run windforecast
           cp out/report.html index.html
+          cp out/windows.json windows.json
 
       - name: Commit and push changes
         run: |
-          git add index.html
+          git add index.html windows.json
           git commit -m "chore: Update forecast report $(date +%Y-%m-%d_%H:%M)" --no-verify
           # Force push to create/update remote branch
           git push -f origin HEAD:reports
