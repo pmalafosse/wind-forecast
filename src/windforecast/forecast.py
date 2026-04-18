@@ -168,7 +168,7 @@ class ForecastClient:
             ht = h["hourly"]["time"]
             dfh = pd.DataFrame(
                 {
-                    "time": pd.to_datetime(ht),
+                    "time": pd.to_datetime(ht, utc=True),
                     "wind_kn": h["hourly"]["wind_speed_10m"],
                     "gust_kn": h["hourly"]["wind_gusts_10m"],
                     "dir_deg": h["hourly"]["wind_direction_10m"],
@@ -182,7 +182,7 @@ class ForecastClient:
             if mt:
                 dfm = pd.DataFrame(
                     {
-                        "time": pd.to_datetime(mt),
+                        "time": pd.to_datetime(mt, utc=True),
                         "wind_kn": m15["minutely_15"]["wind_speed_10m"],
                         "gust_kn": m15["minutely_15"]["wind_gusts_10m"],
                         "dir_deg": m15["minutely_15"]["wind_direction_10m"],
@@ -195,13 +195,18 @@ class ForecastClient:
 
             # Wave data
             wt = wav["hourly"]["time"]
-            dfw = pd.DataFrame({"time": pd.to_datetime(wt), "wave_m": wav["hourly"]["wave_height"]})
+            dfw = pd.DataFrame(
+                {"time": pd.to_datetime(wt, utc=True), "wave_m": wav["hourly"]["wave_height"]}
+            )
 
             # Prefer 15-min where available
-            df = pd.concat(
-                [dfm, dfh[dfh["time"] > dfm["time"].max()] if not dfm.empty else dfh],
-                ignore_index=True,
-            )
+            if dfm.empty:
+                df = dfh
+            else:
+                df = pd.concat(
+                    [dfm, dfh[dfh["time"] > dfm["time"].max()]],
+                    ignore_index=True,
+                )
 
             # Merge waves
             df = df.merge(dfw, on="time", how="left")
