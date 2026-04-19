@@ -12,16 +12,25 @@ from windforecast.forecast import ForecastClient, fetch_model_run
 # --- fetch_model_run ---
 
 
+def _mock_session(response=None, side_effect=None):
+    mock_sess = Mock()
+    if side_effect:
+        mock_sess.get.side_effect = side_effect
+    else:
+        mock_sess.get.return_value = response
+    return Mock(return_value=mock_sess)
+
+
 def test_fetch_model_run_success():
     mock_resp = Mock()
     mock_resp.json.return_value = {"reference_time": "2024-03-14T06:00:00Z"}
-    with patch("windforecast.forecast.requests.get", return_value=mock_resp):
+    with patch("windforecast.forecast._session", _mock_session(mock_resp)):
         result = fetch_model_run()
     assert result == "2024-03-14T06:00:00Z"
 
 
 def test_fetch_model_run_network_error():
-    with patch("windforecast.forecast.requests.get", side_effect=Exception("timeout")):
+    with patch("windforecast.forecast._session", _mock_session(side_effect=Exception("timeout"))):
         result = fetch_model_run()
     assert result is None
 
@@ -29,7 +38,7 @@ def test_fetch_model_run_network_error():
 def test_fetch_model_run_missing_key():
     mock_resp = Mock()
     mock_resp.json.return_value = {}
-    with patch("windforecast.forecast.requests.get", return_value=mock_resp):
+    with patch("windforecast.forecast._session", _mock_session(mock_resp)):
         result = fetch_model_run()
     assert result is None
 
@@ -49,11 +58,10 @@ MIN15_RESPONSE = {
 
 def test_fetch_spot_15min_returns_rows(config_file):
     config = load_config(config_file)
-    client = ForecastClient(config)
-
     mock_resp = Mock()
     mock_resp.json.return_value = MIN15_RESPONSE
-    with patch("windforecast.forecast.requests.get", return_value=mock_resp):
+    with patch("windforecast.forecast._session", _mock_session(mock_resp)):
+        client = ForecastClient(config)
         rows = client.fetch_spot_15min(41.38, 2.21)
 
     assert len(rows) == 2
@@ -65,11 +73,10 @@ def test_fetch_spot_15min_returns_rows(config_file):
 
 def test_fetch_spot_15min_api_error(config_file):
     config = load_config(config_file)
-    client = ForecastClient(config)
-
     mock_resp = Mock()
     mock_resp.raise_for_status.side_effect = Exception("HTTP 500")
-    with patch("windforecast.forecast.requests.get", return_value=mock_resp):
+    with patch("windforecast.forecast._session", _mock_session(mock_resp)):
+        client = ForecastClient(config)
         with pytest.raises(Exception, match="HTTP 500"):
             client.fetch_spot_15min(41.38, 2.21)
 

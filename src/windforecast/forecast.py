@@ -6,6 +6,8 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import pandas as pd
 import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 
 from .config import load_config
 from .schemas import WindConfig, WindSpot
@@ -13,12 +15,22 @@ from .schemas import WindConfig, WindSpot
 # Initialize logger
 logger = logging.getLogger(__name__)
 
+_TIMEOUT = 60  # seconds per request
+_RETRY = Retry(total=3, backoff_factor=1, status_forcelist=[429, 500, 502, 503, 504])
+
+
+def _session() -> requests.Session:
+    s = requests.Session()
+    adapter = HTTPAdapter(max_retries=_RETRY)
+    s.mount("https://", adapter)
+    return s
+
 
 def fetch_model_run(model: str = "meteofrance_arome_france_hd_15min") -> Optional[str]:
     """Return the latest model run reference_time ISO string, or None on failure."""
     url = f"https://openmeteo.s3.amazonaws.com/data_spatial/{model}/latest.json"
     try:
-        r = requests.get(url, timeout=10)
+        r = _session().get(url, timeout=_TIMEOUT)
         r.raise_for_status()
         return r.json().get("reference_time")
     except Exception:
@@ -47,6 +59,7 @@ class ForecastClient:
         self.config = config
         self.base_url = "https://api.open-meteo.com/v1/meteofrance"
         self.marine_url = "https://marine-api.open-meteo.com/v1/marine"
+        self._session = _session()
 
     def fetch_forecasts(self) -> Dict[str, Any]:
         """
@@ -83,7 +96,7 @@ class ForecastClient:
             # roughness and produces systematically lower 10m wind speeds for coastal spots.
             "cell_selection": "sea",
         }
-        r_hourly = requests.get(self.base_url, params=params_hourly, timeout=30)
+        r_hourly = self._session.get(self.base_url, params=params_hourly, timeout=_TIMEOUT)
         r_hourly.raise_for_status()
 
         # 15-minute forecast
@@ -97,7 +110,7 @@ class ForecastClient:
             "forecast_minutely_15": self.config.forecast.forecast_min15,
             "cell_selection": "sea",
         }
-        r_min15 = requests.get(self.base_url, params=params_min15, timeout=30)
+        r_min15 = self._session.get(self.base_url, params=params_min15, timeout=_TIMEOUT)
         r_min15.raise_for_status()
 
         # Marine (waves)
@@ -109,7 +122,7 @@ class ForecastClient:
             "forecast_hours": self.config.forecast.forecast_hours_hourly,
             "cell_selection": "sea",
         }
-        r_wave = requests.get(self.marine_url, params=params_wave, timeout=30)
+        r_wave = self._session.get(self.marine_url, params=params_wave, timeout=_TIMEOUT)
         r_wave.raise_for_status()
 
         return r_hourly.json(), r_min15.json(), r_wave.json()
@@ -126,7 +139,7 @@ class ForecastClient:
             "forecast_minutely_15": self.config.forecast.forecast_min15,
             "cell_selection": "sea",
         }
-        r = requests.get(self.base_url, params=params, timeout=30)
+        r = self._session.get(self.base_url, params=params, timeout=_TIMEOUT)
         r.raise_for_status()
         m15 = r.json().get("minutely_15", {})
         times = m15.get("time", [])
@@ -151,7 +164,7 @@ class ForecastClient:
         for m, title in models.items():
             url = f"{base}/{m}/latest.json"
             try:
-                r = requests.get(url, timeout=20)
+                r = self._session.get(url, timeout=_TIMEOUT)
                 r.raise_for_status()
                 j = r.json()
                 run_iso = j.get("reference_time")

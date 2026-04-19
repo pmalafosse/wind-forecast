@@ -35,7 +35,10 @@ def test_fetch_forecasts_api_error(config_file, status_code, expected_error):
     mock_response.status_code = status_code
     mock_response.raise_for_status.side_effect = Exception(expected_error)
 
-    with patch("requests.get", return_value=mock_response):
+    mock_sess = Mock()
+    mock_sess.get.return_value = mock_response
+    with patch("windforecast.forecast._session", return_value=mock_sess):
+        client = ForecastClient(config)
         with pytest.raises(Exception, match=expected_error):
             client.fetch_forecasts()
 
@@ -45,16 +48,16 @@ def test_process_forecasts(config_file, sample_forecast_data, sample_wave_data):
     config = load_config(config_file)
     client = ForecastClient(config)
 
-    # Mock API responses
-    with patch("requests.get") as mock_get:
-        mock_responses = [
-            Mock(json=lambda: sample_forecast_data),
-            Mock(json=lambda: sample_forecast_data),  # 15min data
-            Mock(json=lambda: sample_wave_data),
-            Mock(json=lambda: {"arome_france_hd": {"run": "2024-03-14T12:00:00Z"}}),
-        ]
-        mock_get.side_effect = mock_responses
-
+    mock_sess = Mock()
+    mock_sess.get.side_effect = [
+        Mock(json=lambda: sample_forecast_data),
+        Mock(json=lambda: sample_forecast_data),  # 15min data
+        Mock(json=lambda: sample_wave_data),
+        Mock(json=lambda: {"arome_france_hd": {"run": "2024-03-14T12:00:00Z"}}),
+        Mock(json=lambda: {"arome_france_hd": {"run": "2024-03-14T12:00:00Z"}}),
+    ]
+    with patch("windforecast.forecast._session", return_value=mock_sess):
+        client = ForecastClient(config)
         result = client.fetch_forecasts()
 
         assert isinstance(result, dict)
