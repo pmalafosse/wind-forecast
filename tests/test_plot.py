@@ -74,12 +74,13 @@ def test_fetch_spot_15min_api_error(config_file):
             client.fetch_spot_15min(41.38, 2.21)
 
 
+pytest.importorskip("matplotlib", reason="matplotlib not installed (pip install .[plot])")
+
 # --- plot_spot_15min ---
 
 
 @pytest.fixture(autouse=True, scope="module")
 def agg_backend():
-    """Use non-interactive Agg backend so tests don't open windows."""
     import matplotlib
 
     matplotlib.use("Agg")
