@@ -13,7 +13,6 @@ A wind forecast analyzer and report generator for kitesurfing conditions. Fetche
 - Star rating system for wind quality
 - 15-minute AROME resolution where available (marked with a blue dot in column headers)
 - Clickable spot names open a 15-min wind/gust chart in a modal
-- JPG and PDF export
 - Wave height and precipitation integration
 - Configurable spots, wind sectors, bands, and time windows
 
@@ -36,8 +35,6 @@ uv run windforecast plot --all
 
 ```bash
 uv run windforecast                          # HTML report
-uv run windforecast --jpg                    # + JPG snapshot (requires Chrome)
-uv run windforecast --pdf                    # + PDF
 uv run windforecast --config path/to/config.json
 uv run windforecast -v                       # verbose/debug
 ```
@@ -95,13 +92,6 @@ uv run pytest                                # all tests + coverage
 uv run pytest tests/test_forecast.py        # single file
 uv run pre-commit run --all-files
 ```
-
-### JPG/PDF generation
-
-Requires Chrome or Chromium (auto-detected). Falls back to `wkhtmltopdf`.
-
-- macOS: `brew install --cask google-chrome`
-- Linux: `sudo apt install chromium-browser`
 
 ## License
 
