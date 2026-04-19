@@ -3,216 +3,106 @@
 [![Tests](https://github.com/pmalafosse/wind-forecast/actions/workflows/tests.yml/badge.svg)](https://github.com/pmalafosse/wind-forecast/actions/workflows/tests.yml)
 [![Coverage Status](https://coveralls.io/repos/github/pmalafosse/wind-forecast/badge.svg?branch=main)](https://coveralls.io/github/pmalafosse/wind-forecast?branch=main)
 
-A professional wind forecast analyzer and report generator for kitesurfing conditions. Fetches data from AROME HD model and generates interactive HTML reports with JPG snapshots.
+A wind forecast analyzer and report generator for kitesurfing conditions. Fetches data from the AROME HD model (hourly + 15-min) and generates interactive HTML reports with clickable per-spot wind charts.
 
 ![Example Wind Forecast Report](docs/images/report.jpg)
 
 ## Features
 
-- 🌊 Accurate wind forecast analysis for multiple kitesurfing spots
-- 📊 Interactive HTML reports with detailed forecast visualization
-- ⭐ Simple star rating system (1-5 stars) for wind conditions
-- � Optional daily summary with side-by-side day comparison
-- �📱 JPG snapshots for mobile viewing and sharing
-- ⚙️ Robust configuration with validation
-- 📈 Support for both hourly and 15-minute AROME HD forecasts
-- 🌡️ Wave height and precipitation integration
-- 🔍 Smart kiteable conditions detection
-- 📝 Detailed logging and error reporting
-
-## Project Structure
-
-```text
-wind-forecast/
-├── src/                    # Source code
-│   └── windforecast/      # Main package
-│       ├── __init__.py    # Package metadata
-│       ├── cli.py         # Command-line interface
-│       ├── config.py      # Configuration management
-│       ├── forecast.py    # Forecast data fetching
-│       ├── logging.py     # Logging configuration
-│       ├── render.py      # Report generation
-│       └── schemas.py     # Data validation models
-├── tests/                 # Test suite
-│   ├── conftest.py       # Test fixtures
-│   ├── test_config.py    # Config tests
-│   ├── test_forecast.py  # Forecast tests
-│   └── test_render.py    # Rendering tests
-├── docs/                  # Documentation
-│   └── configuration.md   # Config guide
-├── config.json           # Main configuration
-├── .pre-commit-config.yaml # Development hooks
-├── pyproject.toml        # Project metadata
-└── README.md            # This file
-```
+- Interactive HTML report with kiteable-only and all-conditions views
+- Star rating system for wind quality
+- 15-minute AROME resolution where available (marked with a blue dot in column headers)
+- Clickable spot names open a 15-min wind/gust chart in a modal
+- JPG and PDF export
+- Wave height and precipitation integration
+- Configurable spots, wind sectors, bands, and time windows
 
 ## Quick Start
 
-1. Create a virtual environment:
-   ```bash
-   python -m venv .venv
-   source .venv/bin/activate  # or .venv\Scripts\activate on Windows
-   ```
-
-2. Install with development tools:
-   ```bash
-   pip install -e ".[dev]"
-   ```
-
-3. Run the forecast analyzer:
-   ```bash
-   windforecast --jpg
-   ```
-
-## Installation Options
-
-### For Users
-
 ```bash
-# Basic installation
-pip install .
+# Install (Python 3.14, managed by uv)
+uv sync --extra dev --extra plot
 
-# With optional image handling
-pip install .[pillow]
-```
+# Generate HTML report
+uv run windforecast
 
-### For Developers
-
-```bash
-# Full development installation
-pip install -e ".[dev]"
-
-# Install pre-commit hooks
-pre-commit install
+# Generate per-spot 15-min wind charts
+uv run windforecast plot --all
 ```
 
 ## Usage
 
-After installation, run the tool with:
+### Report generation
 
 ```bash
-# Basic usage
-windforecast
-
-# Generate JPG snapshot
-windforecast --jpg
-
-# Generate PDF version
-windforecast --pdf
-
-# Generate both JPG and PDF
-windforecast --jpg --pdf
-
-# Custom configuration
-windforecast --config path/to/config.json
-
-# Debug output
-windforecast -v
-
-# Show version
-windforecast --version
+uv run windforecast                          # HTML report
+uv run windforecast --jpg                    # + JPG snapshot (requires Chrome)
+uv run windforecast --pdf                    # + PDF
+uv run windforecast --config path/to/config.json
+uv run windforecast -v                       # verbose/debug
 ```
+
+### 15-min wind charts
+
+Generates a wind/gust chart for the current day from the 15-min AROME model, including the model run timestamp.
+
+```bash
+# Single spot by name (must exist in config.json)
+uv run windforecast plot --spot Bogatell
+
+# All spots from config.json (used by CI to populate plots/)
+uv run windforecast plot --all
+
+# Ad-hoc spot not in config
+uv run windforecast plot --lat 41.38 --lon 2.21 --name "My Spot"
+```
+
+Charts are saved to `out/plots/<spot_name>_15min_today.png`. Clicking a spot name in the HTML report opens the corresponding chart in a modal.
+
+Requires `matplotlib`: `uv sync --extra plot`.
 
 ## Configuration
 
-The tool uses a JSON configuration file to define:
+`config.json` controls spots, forecast parameters, and conditions. See [docs/configuration.md](docs/configuration.md) for the full reference.
 
-- Kite spots and their valid wind sectors
-- Forecast parameters and time ranges
-- Time window restrictions (e.g., daylight hours)
-- Wind band thresholds and conditions
-
-Example:
 ```json
 {
   "spots": [{
-    "name": "Beach Spot",
-    "lat": 41.3948,
-    "lon": 2.2105,
-    "dir_sector": {
-      "start": 225,
-      "end": 45,
-      "wrap": true  // Wrapping sector from 225° through North to 45°
-    }
+    "name": "Bogatell",
+    "lat": 41.3851,
+    "lon": 2.2100,
+    "dir_sector": { "start": 225, "end": 45, "wrap": true }
   }],
-
   "forecast": {
     "model": "arome_france_hd",
-    "hourly_vars": "wind_speed_10m,wind_direction_10m",
+    "hourly_vars": "wind_speed_10m,wind_gusts_10m,wind_direction_10m,precipitation",
     "wave_vars": "wave_height",
     "forecast_hours_hourly": 48,
     "forecast_min15": 24
-  }
+  },
+  "time_window": { "day_start": 6, "day_end": 21 },
+  "conditions": { "bands": [["too much", 40], ["good", 17], ["light", 12]], "rain_limit": 0.5 }
 }
 ```
 
-See [docs/configuration.md](docs/configuration.md) for complete configuration guide.
-
 ## Development
 
-### Testing
-
 ```bash
-# Run all tests
-pytest
+uv sync --extra dev --extra plot
+uv run pre-commit install
 
-# With coverage
-pytest --cov=windforecast
-
-# HTML coverage report
-pytest --cov=windforecast --cov-report=html
+uv run pytest                                # all tests + coverage
+uv run pytest tests/test_forecast.py        # single file
+uv run pre-commit run --all-files
 ```
 
-### Code Quality
+### JPG/PDF generation
 
-The project uses pre-commit hooks for:
-- Black code formatting
-- isort import sorting
-- MyPy type checking
-- Basic file hygiene
+Requires Chrome or Chromium (auto-detected). Falls back to `wkhtmltopdf`.
 
-### Logging
-
-Comprehensive logging with configurable levels:
-
-```python
-from windforecast.logging import configure_logging
-
-# Debug output
-configure_logging(verbose=True)
-
-# With file output
-configure_logging(log_file=Path("wind.log"))
-```
-
-## Requirements
-
-### Python Dependencies
-- Core:
-  - pandas: Data processing
-  - requests: API access
-  - pydantic: Config validation
-- Optional:
-  - pillow: Better image handling
-
-### HTML to JPG Conversion
-The tool will automatically detect and use:
-1. **Chrome/Chromium** (recommended)
-   - Uses system-installed Chrome or Chromium
-   - Automatically detected in standard locations:
-     - macOS: `/Applications/Google Chrome.app` or `/Applications/Chromium.app`
-     - Linux/Windows: Available in system PATH
-   - Install if needed:
-     - macOS: `brew install --cask google-chrome` or `brew install --cask chromium`
-     - Linux: `sudo apt install chromium-browser`
-2. **wkhtmltopdf** (fallback)
-   - macOS: `brew install wkhtmltopdf`
-   - Linux: `sudo apt install wkhtmltopdf`
-
-### Contributors
-
-- Pierre Malafosse (maintainer)
+- macOS: `brew install --cask google-chrome`
+- Linux: `sudo apt install chromium-browser`
 
 ## License
 
-This project is licensed under the Creative Commons Attribution-NonCommercial 4.0 International License (CC BY-NC 4.0). This means you can share and adapt the code, but commercial use is not permitted. See the [LICENSE](LICENSE) file for details.
+[CC BY-NC 4.0](LICENSE) — share and adapt freely, no commercial use.
