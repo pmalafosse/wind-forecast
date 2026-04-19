@@ -83,7 +83,7 @@ def test_fetch_spot_15min_api_error(config_file):
 
 pytest.importorskip("matplotlib", reason="matplotlib not installed (pip install .[plot])")
 
-# --- plot_spot_15min ---
+# --- shared fixture ---
 
 
 @pytest.fixture(autouse=True, scope="module")
@@ -91,6 +91,46 @@ def agg_backend():
     import matplotlib
 
     matplotlib.use("Agg")
+
+
+# --- plot_spot_from_rows ---
+
+
+def test_plot_spot_from_rows_saves_file(tmp_path):
+    rows = [
+        {"time": "2024-03-14T12:00", "wind_kn": 14.0, "gust_kn": 18.0, "dir_deg": 240},
+        {"time": "2024-03-14T12:15", "wind_kn": 15.0, "gust_kn": 19.0, "dir_deg": 242},
+    ]
+
+    with patch("windforecast.plot.datetime") as mock_dt:
+        mock_dt.now.return_value.date.return_value = __import__("datetime").date(2024, 3, 14)
+        mock_dt.fromisoformat.side_effect = __import__("datetime").datetime.fromisoformat
+
+        from windforecast.plot import plot_spot_from_rows
+
+        out_path = plot_spot_from_rows("Test Spot", rows, "2024-03-14T06:00:00Z", tmp_path)
+
+    assert out_path == tmp_path / "plots" / "test_spot_15min_today.png"
+    assert out_path.exists()
+
+
+def test_plot_spot_from_rows_empty_returns_none(tmp_path):
+    from windforecast.plot import plot_spot_from_rows
+
+    result = plot_spot_from_rows("Test Spot", [], None, tmp_path)
+    assert result is None
+
+
+def test_plot_spot_from_rows_no_data_today_returns_none(tmp_path):
+    rows = [{"time": "2023-01-01T12:00", "wind_kn": 14.0, "gust_kn": 18.0, "dir_deg": 240}]
+
+    from windforecast.plot import plot_spot_from_rows
+
+    result = plot_spot_from_rows("Test Spot", rows, None, tmp_path)
+    assert result is None
+
+
+# --- plot_spot_15min ---
 
 
 def test_plot_spot_15min_saves_to_plots_subdir(tmp_path, config_file):

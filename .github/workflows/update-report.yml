@@ -42,8 +42,7 @@ jobs:
       - name: Generate report
         run: |
           mkdir -p out
-          uv run windforecast
-          uv run windforecast plot --all --out-dir out --no-open
+          uv run windforecast --plot --no-open
           cp out/report.html index.html
           cp out/windows.json windows.json
           cp -r out/plots plots

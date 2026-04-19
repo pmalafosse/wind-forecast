@@ -318,7 +318,18 @@ class ForecastClient:
                         "freq": r["freq"],
                     }
                 )
-            result.append({"spot": spot.name, "rows": rows})
+            m15_raw = Lm15[i].get("minutely_15", {})
+            m15_times = m15_raw.get("time", [])
+            min15_rows = [
+                {
+                    "time": m15_times[j],
+                    "wind_kn": m15_raw["wind_speed_10m"][j],
+                    "gust_kn": m15_raw["wind_gusts_10m"][j],
+                    "dir_deg": m15_raw["wind_direction_10m"][j],
+                }
+                for j in range(len(m15_times))
+            ]
+            result.append({"spot": spot.name, "rows": rows, "min15_rows": min15_rows})
 
         return {
             "generated_at": datetime.now(timezone.utc).isoformat(),

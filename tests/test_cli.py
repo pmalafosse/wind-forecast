@@ -122,6 +122,46 @@ def test_main_successful_run(mock_dependencies):
         assert (mock_dependencies["out_dir"] / "windows.json").exists()
 
 
+def test_main_report_with_plot(mock_dependencies):
+    """Test --plot flag generates plots from already-fetched data."""
+    forecast_data = {
+        **mock_dependencies["forecast_data"],
+        "model_updates": {"meteofrance_arome_france_hd_15min": {"run": "2024-03-14T06:00:00Z"}},
+        "spots": [
+            {
+                **mock_dependencies["forecast_data"]["spots"][0],
+                "min15_rows": [
+                    {"time": "2024-03-14T12:00", "wind_kn": 15.0, "gust_kn": 20.0, "dir_deg": 240}
+                ],
+            }
+        ],
+    }
+    with (
+        patch(
+            "sys.argv",
+            [
+                "windforecast",
+                "--config",
+                str(mock_dependencies["config_file"]),
+                "--out-dir",
+                str(mock_dependencies["out_dir"]),
+                "--plot",
+                "--no-open",
+            ],
+        ),
+        patch("windforecast.cli.ForecastClient") as MockClient,
+        patch("windforecast.cli.ReportRenderer") as MockRenderer,
+        patch("windforecast.plot.plot_spot_from_rows") as mock_plot,
+    ):
+        MockClient.return_value.fetch_forecasts.return_value = forecast_data
+        MockRenderer.return_value = MagicMock()
+
+        result = main()
+
+    assert result == 0
+    mock_plot.assert_called_once()
+
+
 def test_main_config_error(tmp_path):
     """Test main function with invalid config."""
     config_file = tmp_path / "invalid_config.json"

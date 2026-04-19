@@ -49,6 +49,23 @@ def _cmd_report(args: argparse.Namespace) -> int:
         renderer.render_html(data, html_path)
         logger.info(f"Wrote {html_path}")
 
+        if getattr(args, "plot", False):
+            from .plot import plot_spot_from_rows
+
+            model_run = (
+                data.get("model_updates", {})
+                .get("meteofrance_arome_france_hd_15min", {})
+                .get("run")
+            )
+            for spot_data in data["spots"]:
+                plot_spot_from_rows(
+                    spot_data["spot"],
+                    spot_data.get("min15_rows", []),
+                    model_run,
+                    out_dir,
+                    open_after=not getattr(args, "no_open", True),
+                )
+
         return 0
     except Exception as e:
         logger.error(f"Error: {e}")
@@ -100,6 +117,12 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--version", action="version", version=f"windforecast {__version__}")
     _add_common_args(parser)
+    parser.add_argument(
+        "--plot", action="store_true", help="Also generate 15-min wind charts for all spots"
+    )
+    parser.add_argument(
+        "--no-open", action="store_true", help="Don't open generated plots (used with --plot)"
+    )
     parser.set_defaults(cmd="report")
 
     subparsers = parser.add_subparsers(dest="cmd")
