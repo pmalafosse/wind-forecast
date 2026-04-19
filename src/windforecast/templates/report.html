@@ -361,6 +361,56 @@
         th.day-start {
             border-top: 2px solid #2c3e50 !important;
         }
+        .spot-link {
+            color: inherit;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        .spot-link:hover {
+            text-decoration: underline;
+        }
+        #plot-modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.6);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        #plot-modal.open {
+            display: flex;
+        }
+        #plot-modal-inner {
+            background: white;
+            border-radius: 8px;
+            padding: 16px;
+            max-width: 90vw;
+            max-height: 90vh;
+            overflow: auto;
+            position: relative;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+        }
+        #plot-modal-inner img {
+            display: block;
+            max-width: 100%;
+        }
+        #plot-modal-close {
+            position: absolute;
+            top: 8px;
+            right: 12px;
+            background: none;
+            border: none;
+            font-size: 1.4em;
+            cursor: pointer;
+            color: #666;
+            line-height: 1;
+        }
+        #plot-modal-error {
+            color: #888;
+            padding: 20px;
+            font-size: 0.95em;
+        }
     </style>
 </head>
 <body data-show-summary="false">
@@ -434,5 +484,34 @@
     </script>
     <!-- FORECAST_DATA -->
     <div class="timestamp">Generated at: <!-- GENERATED_AT --></div>
+
+    <div id="plot-modal" onclick="if(event.target===this) closePlot()">
+        <div id="plot-modal-inner">
+            <button id="plot-modal-close" onclick="closePlot()" title="Close">&#x2715;</button>
+            <div id="plot-modal-content"></div>
+        </div>
+    </div>
+
+    <script>
+        function showPlot(slug) {
+            const src = `plots/${slug}_15min_today.png`;
+            const content = document.getElementById('plot-modal-content');
+            content.innerHTML = '';
+            const img = document.createElement('img');
+            img.src = src;
+            img.alt = slug;
+            img.onerror = () => {
+                content.innerHTML = `<div id="plot-modal-error">No plot available for <strong>${slug}</strong>.<br>Plots are generated when running the full report update.</div>`;
+            };
+            content.appendChild(img);
+            document.getElementById('plot-modal').classList.add('open');
+        }
+
+        function closePlot() {
+            document.getElementById('plot-modal').classList.remove('open');
+        }
+
+        document.addEventListener('keydown', e => { if (e.key === 'Escape') closePlot(); });
+    </script>
 </body>
 </html>

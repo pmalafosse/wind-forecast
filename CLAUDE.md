@@ -40,8 +40,8 @@ The CLI entry point is `windforecast [options]`.
 ## Commands
 
 ```bash
-# Install for development (Python version pinned via .python-version to 3.11)
-uv sync --extra dev
+# Install for development (Python version pinned via .python-version to 3.14)
+uv sync --extra dev --extra plot
 uv run pre-commit install
 
 # Run the tool
@@ -50,6 +50,11 @@ uv run windforecast --jpg                    # + JPG snapshot (requires Chrome)
 uv run windforecast --pdf                    # + PDF version
 uv run windforecast --config path/to/config.json
 uv run windforecast -v                       # verbose/debug
+
+# Plot 15-min AROME forecast (requires --extra plot)
+uv run windforecast plot --spot Bogatell     # single spot from config.json
+uv run windforecast plot --all               # all spots from config.json
+uv run windforecast plot --lat 41.38 --lon 2.21 --name "My Spot"  # ad-hoc
 
 # Tests
 uv run pytest                                # all tests + coverage (configured in pyproject.toml)
@@ -106,7 +111,7 @@ Report structure uses day sections:
   "spots": [{ "name": "...", "lat": 0.0, "lon": 0.0, "dir_sector": { "start": 225, "end": 45, "wrap": true } }],
   "forecast": { "model": "arome_france_hd", "forecast_hours_hourly": 48, "forecast_min15": 24 },
   "time_window": { "day_start": 6, "day_end": 21 },
-  "conditions": { "bands": [...], "rain_limit": 0.5, "min_run_hours": 2 }
+  "conditions": { "bands": [...], "rain_limit": 0.5 }
 }
 ```
 

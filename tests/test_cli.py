@@ -98,18 +98,20 @@ def mock_dependencies(tmp_path):
 
 def test_main_successful_run(mock_dependencies):
     """Test successful execution of main function."""
-    with patch(
-        "sys.argv",
-        [
-            "windforecast",
-            "--config",
-            str(mock_dependencies["config_file"]),
-            "--out-dir",
-            str(mock_dependencies["out_dir"]),
-        ],
-    ), patch("windforecast.cli.ForecastClient") as MockClient, patch(
-        "windforecast.cli.ReportRenderer"
-    ) as MockRenderer:
+    with (
+        patch(
+            "sys.argv",
+            [
+                "windforecast",
+                "--config",
+                str(mock_dependencies["config_file"]),
+                "--out-dir",
+                str(mock_dependencies["out_dir"]),
+            ],
+        ),
+        patch("windforecast.cli.ForecastClient") as MockClient,
+        patch("windforecast.cli.ReportRenderer") as MockRenderer,
+    ):
 
         # Setup mocks
         mock_client = MagicMock()
@@ -132,19 +134,21 @@ def test_main_successful_run(mock_dependencies):
 
 def test_main_with_jpg(mock_dependencies):
     """Test main function with JPG generation."""
-    with patch(
-        "sys.argv",
-        [
-            "windforecast",
-            "--config",
-            str(mock_dependencies["config_file"]),
-            "--out-dir",
-            str(mock_dependencies["out_dir"]),
-            "--jpg",
-        ],
-    ), patch("windforecast.cli.ForecastClient") as MockClient, patch(
-        "windforecast.cli.ReportRenderer"
-    ) as MockRenderer:
+    with (
+        patch(
+            "sys.argv",
+            [
+                "windforecast",
+                "--config",
+                str(mock_dependencies["config_file"]),
+                "--out-dir",
+                str(mock_dependencies["out_dir"]),
+                "--jpg",
+            ],
+        ),
+        patch("windforecast.cli.ForecastClient") as MockClient,
+        patch("windforecast.cli.ReportRenderer") as MockRenderer,
+    ):
 
         # Setup mocks
         mock_client = MagicMock()
@@ -166,19 +170,21 @@ def test_main_with_jpg(mock_dependencies):
 
 def test_main_jpg_failure(mock_dependencies):
     """Test main function when JPG generation fails."""
-    with patch(
-        "sys.argv",
-        [
-            "windforecast",
-            "--config",
-            str(mock_dependencies["config_file"]),
-            "--out-dir",
-            str(mock_dependencies["out_dir"]),
-            "--jpg",
-        ],
-    ), patch("windforecast.cli.ForecastClient") as MockClient, patch(
-        "windforecast.cli.ReportRenderer"
-    ) as MockRenderer:
+    with (
+        patch(
+            "sys.argv",
+            [
+                "windforecast",
+                "--config",
+                str(mock_dependencies["config_file"]),
+                "--out-dir",
+                str(mock_dependencies["out_dir"]),
+                "--jpg",
+            ],
+        ),
+        patch("windforecast.cli.ForecastClient") as MockClient,
+        patch("windforecast.cli.ReportRenderer") as MockRenderer,
+    ):
 
         # Setup mocks
         mock_client = MagicMock()
@@ -207,11 +213,117 @@ def test_main_config_error(tmp_path):
         assert result == 1
 
 
+# --- plot subcommand ---
+
+
+def test_parse_args_plot_spot():
+    with patch("sys.argv", ["windforecast", "plot", "--spot", "Bogatell"]):
+        args = parse_args()
+    assert args.cmd == "plot"
+    assert args.spot == "Bogatell"
+    assert not args.all
+
+
+def test_parse_args_plot_all():
+    with patch("sys.argv", ["windforecast", "plot", "--all"]):
+        args = parse_args()
+    assert args.cmd == "plot"
+    assert args.all
+
+
+def test_parse_args_plot_adhoc():
+    with patch(
+        "sys.argv",
+        [
+            "windforecast",
+            "plot",
+            "--lat",
+            "41.38",
+            "--lon",
+            "2.21",
+            "--name",
+            "My Spot",
+            "--no-open",
+        ],
+    ):
+        args = parse_args()
+    assert args.lat == 41.38
+    assert args.lon == 2.21
+    assert args.name == "My Spot"
+    assert args.no_open
+
+
+def test_main_plot_by_spot(mock_dependencies):
+    with (
+        patch(
+            "sys.argv",
+            [
+                "windforecast",
+                "plot",
+                "--spot",
+                "Test Spot",
+                "--config",
+                str(mock_dependencies["config_file"]),
+                "--no-open",
+            ],
+        ),
+        patch("windforecast.plot.plot_spot_15min") as mock_plot,
+    ):
+        result = main()
+    assert result == 0
+    mock_plot.assert_called_once_with("Test Spot", 41.3948, 2.2105, Path("out"), open_after=False)
+
+
+def test_main_plot_all(mock_dependencies):
+    with (
+        patch(
+            "sys.argv",
+            [
+                "windforecast",
+                "plot",
+                "--all",
+                "--config",
+                str(mock_dependencies["config_file"]),
+                "--no-open",
+            ],
+        ),
+        patch("windforecast.plot.plot_spot_15min") as mock_plot,
+    ):
+        result = main()
+    assert result == 0
+    assert mock_plot.call_count == 1  # one spot in test config
+
+
+def test_main_plot_invalid_spot(mock_dependencies):
+    with patch(
+        "sys.argv",
+        [
+            "windforecast",
+            "plot",
+            "--spot",
+            "Nonexistent",
+            "--config",
+            str(mock_dependencies["config_file"]),
+        ],
+    ):
+        result = main()
+    assert result == 1
+
+
+def test_main_plot_no_target(mock_dependencies):
+    with patch(
+        "sys.argv", ["windforecast", "plot", "--config", str(mock_dependencies["config_file"])]
+    ):
+        result = main()
+    assert result == 1
+
+
 def test_main_forecast_error(mock_dependencies):
     """Test main function when forecast fetching fails."""
-    with patch(
-        "sys.argv", ["windforecast", "--config", str(mock_dependencies["config_file"])]
-    ), patch("windforecast.cli.ForecastClient") as MockClient:
+    with (
+        patch("sys.argv", ["windforecast", "--config", str(mock_dependencies["config_file"])]),
+        patch("windforecast.cli.ForecastClient") as MockClient,
+    ):
 
         # Setup mock to raise an error
         mock_client = MagicMock()
