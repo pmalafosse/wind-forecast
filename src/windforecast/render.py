@@ -266,15 +266,21 @@ class ReportRenderer:
                 )
             rows.append(f"<tr>{''.join(header_cells)}</tr>")
 
+            is_today = day == date.today()
+
             # Generate data rows
             for spot in daily_spots:
                 spot_slug = spot.lower().replace(" ", "_")
-                cells = [
-                    f"<td class='spotcol'>"
-                    f"<strong><a class='spot-link' href='#' "
-                    f"onclick=\"showPlot('{spot_slug}'); return false;\">{spot}</a></strong>"
-                    f"</td>"
-                ]
+                if is_today:
+                    spot_cell = (
+                        f"<td class='spotcol'><strong>"
+                        f"<a class='spot-link' href='#' "
+                        f"onclick=\"showPlot('{spot_slug}'); return false;\">{spot}</a>"
+                        f"</strong></td>"
+                    )
+                else:
+                    spot_cell = f"<td class='spotcol'><strong>{spot}</strong></td>"
+                cells = [spot_cell]
                 spot_has_kiteable = False
 
                 for hour in day_hours:
