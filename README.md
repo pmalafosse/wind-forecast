@@ -21,7 +21,7 @@ A wind forecast analyzer and report generator for kitesurfing conditions. Fetche
 
 ```bash
 # Install (Python 3.14, managed by uv)
-uv sync --extra dev --extra plot
+uv sync --extra dev
 
 # Generate HTML report
 uv run windforecast
@@ -59,7 +59,7 @@ uv run windforecast plot --lat 41.38 --lon 2.21 --name "My Spot"
 
 Charts are saved to `out/plots/<spot_name>_15min_today.png`. Clicking a spot name in the HTML report opens the corresponding chart in a modal.
 
-Requires `matplotlib`: `uv sync --extra plot`.
+Requires `matplotlib`, included in `uv sync --extra dev`.
 
 ## Configuration
 
@@ -88,7 +88,7 @@ Requires `matplotlib`: `uv sync --extra plot`.
 ## Development
 
 ```bash
-uv sync --extra dev --extra plot
+uv sync --extra dev
 uv run pre-commit install
 
 uv run pytest                                # all tests + coverage

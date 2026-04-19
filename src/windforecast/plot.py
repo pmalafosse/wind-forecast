@@ -21,8 +21,7 @@ def plot_spot_15min(
     except ImportError:
         print(
             "matplotlib is required for plotting. Install with:\n"
-            "  pip install matplotlib\n"
-            "or: uv sync --extra plot",
+            "  uv sync  (matplotlib is a core dependency)",
             file=sys.stderr,
         )
         sys.exit(1)
