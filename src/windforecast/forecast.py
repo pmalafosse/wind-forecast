@@ -244,6 +244,7 @@ class ForecastClient:
                     "wave_m",
                     "band",
                     "kiteable",
+                    "freq",
                 ]
             ].sort_values("time")
 
@@ -268,6 +269,7 @@ class ForecastClient:
                         "wave_m": None if pd.isna(r["wave_m"]) else float(r["wave_m"]),
                         "band": r["band"],
                         "kiteable": bool(r["kiteable"]),
+                        "freq": r["freq"],
                     }
                 )
             result.append({"spot": spot.name, "rows": rows})
