@@ -19,12 +19,10 @@ dependencies = [
     "pydantic>=2.0.0",
     "pytz>=2025.2",
     "beautifulsoup4>=4.14.0",
+    "matplotlib>=3.7.0",
 ]
 
 [project.optional-dependencies]
-plot = [
-    "matplotlib>=3.7.0",
-]
 dev = [
     "pytest>=7.0.0",
     "pytest-cov>=4.0.0",
@@ -43,7 +41,8 @@ windforecast = "windforecast.cli:main"
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = ["test_*.py"]
-addopts = "-ra -q --cov=windforecast"
+addopts = "-ra -q --cov=windforecast -m 'not selenium'"
+markers = ["selenium: tests requiring a real Chrome browser"]
 
 [tool.black]
 line-length = 100

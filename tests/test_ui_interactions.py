@@ -2,6 +2,8 @@ import time
 from pathlib import Path
 
 import pytest
+
+pytestmark = pytest.mark.selenium
 from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service

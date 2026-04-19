@@ -41,7 +41,7 @@ The CLI entry point is `windforecast [options]`.
 
 ```bash
 # Install for development (Python version pinned via .python-version to 3.14)
-uv sync --extra dev --extra plot
+uv sync --extra dev          # includes pytest, black, mypy, selenium, matplotlib
 uv run pre-commit install
 
 # Run the tool
@@ -51,13 +51,14 @@ uv run windforecast --pdf                    # + PDF version
 uv run windforecast --config path/to/config.json
 uv run windforecast -v                       # verbose/debug
 
-# Plot 15-min AROME forecast (requires --extra plot)
+# Plot 15-min AROME forecast (matplotlib included in --extra dev)
 uv run windforecast plot --spot Bogatell     # single spot from config.json
 uv run windforecast plot --all               # all spots from config.json
 uv run windforecast plot --lat 41.38 --lon 2.21 --name "My Spot"  # ad-hoc
 
 # Tests
-uv run pytest                                # all tests + coverage (configured in pyproject.toml)
+uv run pytest                                # all tests except selenium (configured in pyproject.toml)
+uv run pytest -m selenium                   # selenium/Chrome tests only
 uv run pytest tests/test_forecast.py        # single test file
 uv run pytest tests/test_render.py::test_name  # single test
 
