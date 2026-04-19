@@ -3,27 +3,8 @@
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Working Principles
-
-### Think Before Coding
-- State assumptions explicitly. If uncertain, ask rather than guess.
-- Present multiple interpretations when they exist; don't choose silently.
-- Suggest simpler approaches and push back when warranted.
-
-### Simplicity First
-- Implement only what was requested — no speculative features or unasked-for flexibility.
-- Avoid premature abstractions for single-use code.
-- Don't handle impossible error scenarios.
-- Rewrite if it could be substantially shorter without losing clarity.
-
-### Surgical Changes
-- Modify only what's necessary to address the request.
-- Don't refactor unrelated code or fix unbroken things.
-- Match existing style even if you'd prefer alternatives.
-- Remove only the unused code your changes created, not pre-existing dead code.
-
-### Goal-Driven Execution
-- Convert vague requests into verifiable outcomes before starting (e.g., "Add validation" → "Write and pass validation tests").
-- Plan multi-step work explicitly with checkpoints.
+- State assumptions explicitly; ask rather than guess when uncertain.
+- Remove only unused code your changes created, not pre-existing dead code.
 
 ---
 
