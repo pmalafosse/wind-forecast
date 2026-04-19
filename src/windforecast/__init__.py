@@ -22,17 +22,14 @@ except ImportError:
         # Keep fallback version
         pass
 
-from . import render  # Expose the render module directly
 from .cli import main
 from .config import load_config
 from .forecast import get_wind_forecast
-from .render import HAS_PILLOW, ReportRenderer
+from .render import ReportRenderer
 from .schemas import WindSpeedThresholds
 
 __all__ = [
-    "render",
     "ReportRenderer",
-    "HAS_PILLOW",
     "main",
     "load_config",
     "get_wind_forecast",

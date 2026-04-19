@@ -45,9 +45,7 @@ uv sync --extra dev          # includes pytest, black, mypy, selenium, matplotli
 uv run pre-commit install
 
 # Run the tool
-uv run windforecast                          # HTML report only
-uv run windforecast --jpg                    # + JPG snapshot (requires Chrome)
-uv run windforecast --pdf                    # + PDF version
+uv run windforecast                          # HTML report
 uv run windforecast --config path/to/config.json
 uv run windforecast -v                       # verbose/debug
 
@@ -99,7 +97,7 @@ Report structure uses day sections:
 
 **`logging.py`**: `configure_logging(verbose=True, log_file=Path(...))` — call before anything else if you need debug output.
 
-**Outputs** go to `out/` (not committed): `report.html`, `report.jpg`, `report.pdf`, `windows.json` (intermediate processed data).
+**Outputs** go to `out/` (not committed): `report.html`, `windows.json` (intermediate processed data), `plots/` (per-spot 15-min charts).
 
 ---
 
@@ -119,7 +117,3 @@ Report structure uses day sections:
 See `docs/configuration.md` for the full reference.
 
 ---
-
-## JPG/PDF Generation
-
-Requires Chrome or Chromium (auto-detected at standard macOS/Linux paths). `wkhtmltopdf` is the fallback. If neither is available, `--jpg` and `--pdf` flags will fail with a clear error.

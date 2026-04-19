@@ -16,7 +16,6 @@ def test_parse_args_defaults():
         args = parse_args()
         assert args.config is None
         assert args.out_dir == Path("out")
-        assert not args.jpg
         assert not args.verbose
 
 
@@ -24,20 +23,11 @@ def test_parse_args_custom():
     """Test argument parsing with custom values."""
     with patch(
         "sys.argv",
-        [
-            "windforecast",
-            "--config",
-            "custom_config.json",
-            "--out-dir",
-            "custom_out",
-            "--jpg",
-            "--verbose",
-        ],
+        ["windforecast", "--config", "custom_config.json", "--out-dir", "custom_out", "--verbose"],
     ):
         args = parse_args()
         assert args.config == Path("custom_config.json")
         assert args.out_dir == Path("custom_out")
-        assert args.jpg
         assert args.verbose
 
 
@@ -130,77 +120,6 @@ def test_main_successful_run(mock_dependencies):
         mock_renderer.render_html.assert_called_once()
         assert mock_dependencies["out_dir"].exists()
         assert (mock_dependencies["out_dir"] / "windows.json").exists()
-
-
-def test_main_with_jpg(mock_dependencies):
-    """Test main function with JPG generation."""
-    with (
-        patch(
-            "sys.argv",
-            [
-                "windforecast",
-                "--config",
-                str(mock_dependencies["config_file"]),
-                "--out-dir",
-                str(mock_dependencies["out_dir"]),
-                "--jpg",
-            ],
-        ),
-        patch("windforecast.cli.ForecastClient") as MockClient,
-        patch("windforecast.cli.ReportRenderer") as MockRenderer,
-    ):
-
-        # Setup mocks
-        mock_client = MagicMock()
-        mock_client.fetch_forecasts.return_value = mock_dependencies["forecast_data"]
-        MockClient.return_value = mock_client
-
-        mock_renderer = MagicMock()
-        mock_renderer.generate_jpg.return_value = True
-        MockRenderer.return_value = mock_renderer
-
-        # Run main
-        result = main()
-
-        # Verify
-        assert result == 0
-        mock_renderer.generate_jpg.assert_called_once()
-        assert mock_dependencies["out_dir"].exists()
-
-
-def test_main_jpg_failure(mock_dependencies):
-    """Test main function when JPG generation fails."""
-    with (
-        patch(
-            "sys.argv",
-            [
-                "windforecast",
-                "--config",
-                str(mock_dependencies["config_file"]),
-                "--out-dir",
-                str(mock_dependencies["out_dir"]),
-                "--jpg",
-            ],
-        ),
-        patch("windforecast.cli.ForecastClient") as MockClient,
-        patch("windforecast.cli.ReportRenderer") as MockRenderer,
-    ):
-
-        # Setup mocks
-        mock_client = MagicMock()
-        mock_client.fetch_forecasts.return_value = mock_dependencies["forecast_data"]
-        MockClient.return_value = mock_client
-
-        mock_renderer = MagicMock()
-        mock_renderer.generate_jpg.return_value = False
-        MockRenderer.return_value = mock_renderer
-
-        # Run main
-        result = main()
-
-        # Verify
-        assert result == 1
-        mock_renderer.generate_jpg.assert_called_once()
 
 
 def test_main_config_error(tmp_path):

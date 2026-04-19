@@ -49,22 +49,6 @@ def _cmd_report(args: argparse.Namespace) -> int:
         renderer.render_html(data, html_path)
         logger.info(f"Wrote {html_path}")
 
-        if args.jpg or args.pdf:
-            if args.jpg:
-                jpg_path = out_dir / "report.jpg"
-                if renderer.generate_jpg(html_path, jpg_path):
-                    logger.info(f"Wrote {jpg_path}")
-                else:
-                    logger.error("Failed to generate JPG")
-                    return 1
-            if args.pdf:
-                pdf_path = out_dir / "report.pdf"
-                if renderer.generate_pdf(html_path, pdf_path):
-                    logger.info(f"Wrote {pdf_path}")
-                else:
-                    logger.error("Failed to generate PDF")
-                    return 1
-
         return 0
     except Exception as e:
         logger.error(f"Error: {e}")
@@ -116,8 +100,6 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--version", action="version", version=f"windforecast {__version__}")
     _add_common_args(parser)
-    parser.add_argument("--jpg", action="store_true", help="Generate JPG snapshot of the report")
-    parser.add_argument("--pdf", action="store_true", help="Generate PDF version of the report")
     parser.set_defaults(cmd="report")
 
     subparsers = parser.add_subparsers(dest="cmd")
