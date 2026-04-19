@@ -28,7 +28,7 @@ jobs:
           sudo apt-get install -y chromium-browser
 
       - name: Install dependencies
-        run: uv sync
+        run: uv sync --extra plot
 
       - name: Configure Git
         run: |
@@ -48,12 +48,14 @@ jobs:
         run: |
           mkdir -p out
           uv run windforecast
+          uv run windforecast plot --all --out-dir out --no-open
           cp out/report.html index.html
           cp out/windows.json windows.json
+          cp -r out/plots plots
 
       - name: Commit and push changes
         run: |
-          git add index.html windows.json
+          git add index.html windows.json plots/
           git commit -m "chore: Update forecast report $(date +%Y-%m-%d_%H:%M)" --no-verify
           # Force push to create/update remote branch
           git push -f origin HEAD:reports

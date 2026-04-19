@@ -299,7 +299,13 @@ class ReportRenderer:
 
             # Generate data rows
             for spot in daily_spots:
-                cells = [f"<td class='spotcol'><strong>{spot}</strong></td>"]
+                spot_slug = spot.lower().replace(" ", "_")
+                cells = [
+                    f"<td class='spotcol'>"
+                    f"<strong><a class='spot-link' href='#' "
+                    f"onclick=\"showPlot('{spot_slug}'); return false;\">{spot}</a></strong>"
+                    f"</td>"
+                ]
                 spot_has_kiteable = False
 
                 for hour in day_hours:

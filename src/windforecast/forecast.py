@@ -4,10 +4,25 @@ import logging
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Tuple
 
+import pandas as pd
+import requests
+
 from .config import load_config
+from .schemas import WindConfig, WindSpot
 
 # Initialize logger
 logger = logging.getLogger(__name__)
+
+
+def fetch_model_run(model: str = "meteofrance_arome_france_hd_15min") -> Optional[str]:
+    """Return the latest model run reference_time ISO string, or None on failure."""
+    url = f"https://openmeteo.s3.amazonaws.com/data_spatial/{model}/latest.json"
+    try:
+        r = requests.get(url, timeout=10)
+        r.raise_for_status()
+        return r.json().get("reference_time")
+    except Exception:
+        return None
 
 
 def get_wind_forecast(config_path: Optional[str] = None) -> Dict[str, Any]:
@@ -23,14 +38,6 @@ def get_wind_forecast(config_path: Optional[str] = None) -> Dict[str, Any]:
     config = load_config(config_path)
     client = ForecastClient(config)
     return client.fetch_forecasts()
-
-
-import pandas as pd
-import requests
-
-from .schemas import WindConfig, WindSpot
-
-logger = logging.getLogger(__name__)
 
 
 class ForecastClient:
@@ -106,6 +113,32 @@ class ForecastClient:
         r_wave.raise_for_status()
 
         return r_hourly.json(), r_min15.json(), r_wave.json()
+
+    def fetch_spot_15min(self, lat: float, lon: float) -> List[Dict[str, Any]]:
+        """Fetch 15-min AROME data for a single lat/lon. Returns list of row dicts."""
+        params = {
+            "latitude": lat,
+            "longitude": lon,
+            "models": self.config.forecast.model,
+            "minutely_15": self.config.forecast.hourly_vars,
+            "wind_speed_unit": "kn",
+            "timezone": "Europe/Madrid",
+            "forecast_minutely_15": self.config.forecast.forecast_min15,
+            "cell_selection": "sea",
+        }
+        r = requests.get(self.base_url, params=params, timeout=30)
+        r.raise_for_status()
+        m15 = r.json().get("minutely_15", {})
+        times = m15.get("time", [])
+        return [
+            {
+                "time": t,
+                "wind_kn": m15["wind_speed_10m"][i],
+                "gust_kn": m15["wind_gusts_10m"][i],
+                "dir_deg": m15["wind_direction_10m"][i],
+            }
+            for i, t in enumerate(times)
+        ]
 
     def _fetch_model_updates(self) -> Dict[str, Any]:
         """Fetch model update metadata."""
