@@ -176,6 +176,12 @@ class ReportRenderer:
         # Initialize spot and hour tracking
         all_spots = {spot["spot"] for spot in data["spots"]}
         all_hours = {row["time"] for spot in data["spots"] for row in spot["rows"]}
+        min15_hours = {
+            row["time"]
+            for spot in data["spots"]
+            for row in spot["rows"]
+            if row.get("freq") == "15min"
+        }
 
         # Create data structures for different views
         kiteable_forecasts: Dict[str, Dict[str, Any]] = {}  # Only kiteable conditions
@@ -279,9 +285,15 @@ class ReportRenderer:
                 # For kiteable view, all hours are kiteable. For all view, mark non-kiteable hours
                 if view_type == "all" and hour not in kiteable_hours_by_day[day]:
                     header_classes.append("no-kiteable")
+                is_min15 = hour in min15_hours
+                dot = (
+                    ' <span class="min15-dot" title="15-min AROME (higher resolution)">·</span>'
+                    if is_min15
+                    else ""
+                )
                 header_cells.append(
                     f'<th data-hour="{hour}" class="{" ".join(header_classes)}">'
-                    f'{dt.strftime("%H:%M")}</th>'
+                    f'{dt.strftime("%H:%M")}{dot}</th>'
                 )
             rows.append(f"<tr>{''.join(header_cells)}</tr>")
 
