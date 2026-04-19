@@ -7,7 +7,7 @@ name = "windforecast"
 version = "0.7.0"
 description = "Wind forecast analyzer and report generator for kitesurfing conditions"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.14"
 license = { text = "CC BY-NC 4.0" }
 authors = [
     { name = "Pierre Malafosse", email = "pmalafosse@example.com" }
@@ -44,7 +44,7 @@ addopts = "-ra -q --cov=windforecast"
 
 [tool.black]
 line-length = 100
-target-version = ["py311"]
+target-version = ["py314"]
 
 [tool.isort]
 profile = "black"
@@ -52,7 +52,7 @@ line_length = 100
 multi_line_output = 3
 
 [tool.mypy]
-python_version = "3.11"
+python_version = "3.14"
 warn_return_any = false  # Temporarily disable this while fixing type issues
 warn_unused_configs = true
 disallow_untyped_defs = false  # Temporarily disable this while fixing type issues
