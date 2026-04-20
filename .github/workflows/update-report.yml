@@ -42,7 +42,7 @@ jobs:
 
       - name: Generate report
         run: |
-          mkdir -p out
+          mkdir -p out/plots
           uv run windforecast --plot --no-open
           cp out/report.html index.html
           cp out/windows.json windows.json
