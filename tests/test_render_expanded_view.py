@@ -72,12 +72,12 @@ def test_expanded_view_controls(tmp_path):
 
     toggle_btn = controls.find("button", id="toggleView")
     assert (
-        toggle_btn and toggle_btn.text == "Show All Conditions"
+        toggle_btn and toggle_btn.text == "All Conditions"
     ), "Toggle button should exist with correct text"
 
     search_box = controls.find("input", id="spotSearch")
     assert (
-        search_box and search_box.get("placeholder") == "Search spots..."
+        search_box and search_box.get("placeholder") == "Search spots…"
     ), "Search box should exist with placeholder"
 
 

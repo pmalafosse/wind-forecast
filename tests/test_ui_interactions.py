@@ -69,11 +69,9 @@ def test_daily_summary_initial_state(tmp_path):
 
     soup = BeautifulSoup(report_path.read_text(), "html.parser")
 
-    # Verify toggle button exists with correct initial text
+    # Verify toggle button exists
     toggle_button = soup.find("button", id="toggleSummary")
-    assert (
-        toggle_button and toggle_button.string == "Show Daily Summary"
-    ), "Toggle button should exist with 'Show Daily Summary' text"
+    assert toggle_button, "Toggle button should exist"
 
     # Verify initial hidden state
     body = soup.find("body")
@@ -123,14 +121,14 @@ def test_daily_summary_interaction(tmp_path):
         wait.until(EC.visibility_of(daily_summary))
         assert daily_summary.is_displayed(), "Daily summary should be visible after click"
         assert body.get_attribute("data-show-summary") == "true"
-        assert toggle_button.text == "Hide Daily Summary"
+        assert "active" in toggle_button.get_attribute("class")
 
         # Click to hide
         toggle_button.click()
         wait.until(EC.invisibility_of_element(daily_summary))
         assert not daily_summary.is_displayed(), "Daily summary should be hidden after second click"
         assert body.get_attribute("data-show-summary") == "false"
-        assert toggle_button.text == "Show Daily Summary"
+        assert "active" not in toggle_button.get_attribute("class")
 
     finally:
         driver.quit()

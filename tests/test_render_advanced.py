@@ -42,7 +42,9 @@ def test_model_info_generation():
             return_value=MagicMock(
                 __enter__=MagicMock(
                     return_value=MagicMock(
-                        read=MagicMock(return_value="<!-- FORECAST_DATA --><!-- GENERATED_AT -->")
+                        read=MagicMock(
+                            return_value="<!-- FORECAST_DATA --><!-- GENERATED_AT --><!-- MODEL_UPDATES -->"
+                        )
                     )
                 )
             ),

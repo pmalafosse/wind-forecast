@@ -340,7 +340,8 @@ class ReportRenderer:
                 rows.append(f"<tr class='{' '.join(row_classes)}'>{''.join(cells)}</tr>")
 
             day_str = day.strftime("%A, %d %B")
-            return f"""<div class="day-section">
+            today_attr = ' data-today="true"' if day == date.today() else ""
+            return f"""<div class="day-section"{today_attr}>
                 <h2>{day_str}</h2>
                 <div class="table-container">
                     <table class="forecast-table">
@@ -391,32 +392,30 @@ class ReportRenderer:
             </div>"""
         )
 
-        # Add model updates section at the end of both views
-        model_info = []
+        # Build model updates for the info popup
+        model_rows = []
         for model_id, info in data.get("model_updates", {}).items():
             if info.get("run"):
                 run_time = datetime.fromisoformat(info["run"].replace("Z", "+00:00"))
-                model_info.append(
-                    f"""<div class="model-info">
-                        <span class="model-name">{info['title']}</span>
-                        <span class="model-run">Run: {run_time.strftime('%Y-%m-%d %H:%M')} UTC</span>
-                    </div>"""
+                model_rows.append(
+                    f'<div class="info-model-row">'
+                    f'<span class="info-model-name">{info["title"]}</span>'
+                    f'<span class="info-model-run">{run_time.strftime("%Y-%m-%d %H:%M")} UTC</span>'
+                    f"</div>"
                 )
-
-        if model_info:
-            updates_section = f"""<div class="model-updates">
-                <h3>Forecast Model Updates</h3>
-                {''.join(model_info)}
-            </div>"""
-            spot_tables.append(updates_section)
+        model_updates_html = "".join(model_rows)
 
         # Convert generated_at timestamp to CET
         generated_at = datetime.fromisoformat(data["generated_at"].replace("Z", "+00:00"))
         cet = pytz.timezone("Europe/Paris")
         generated_at_cet = generated_at.astimezone(cet)
 
-        content = template.replace("<!-- FORECAST_DATA -->", "\n".join(spot_tables)).replace(
-            "<!-- GENERATED_AT -->", generated_at_cet.strftime("%Y-%m-%dT%H:%M:%S%z (CET)")
+        content = (
+            template.replace("<!-- FORECAST_DATA -->", "\n".join(spot_tables))
+            .replace(
+                "<!-- GENERATED_AT -->", generated_at_cet.strftime("%Y-%m-%dT%H:%M:%S%z (CET)")
+            )
+            .replace("<!-- MODEL_UPDATES -->", model_updates_html)
         )
 
         output_path.write_text(content)
