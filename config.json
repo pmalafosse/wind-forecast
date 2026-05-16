@@ -131,6 +131,16 @@
       }
     },
     {
+      "name": "Port Leucate",
+      "lat": 42.8707111,
+      "lon": 3.0499439,
+      "dir_sector": {
+        "start": 90,
+        "end": 157.5,
+        "wrap": false
+      }
+    },
+    {
       "name": "La Nautique",
       "lat": 43.1373,
       "lon": 2.9971,
