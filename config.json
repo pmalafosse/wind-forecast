@@ -149,6 +149,26 @@
         "end": 337,
         "wrap": false
       }
+    },
+    {
+      "name": "Almanarre",
+      "lat": 43.0568,
+      "lon": 6.1326,
+      "dir_sector": {
+        "start": 45,
+        "end": 315,
+        "wrap": false
+      }
+    },
+    {
+      "name": "Saint Cyprien",
+      "lat": 42.6572,
+      "lon": 3.0357,
+      "dir_sector": {
+        "start": 0,
+        "end": 180,
+        "wrap": false
+      }
     }
   ],
   "forecast": {
